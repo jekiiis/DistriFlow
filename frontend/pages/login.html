@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Masuk ke sistem DistriFlow">
+  <title>Masuk — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/login.js" defer></script>
+</head>
+<body class="df-login-page">
+  <main class="df-login-card">
+    <div class="df-login-card__brand">
+      <div class="df-login-card__mark" aria-hidden="true">DF</div>
+      <div class="df-login-card__brand-text">
+        DistriFlow
+        <span class="df-login-card__brand-sub">Sistem Penjualan dan POS Distributor</span>
+      </div>
+    </div>
+
+    <div class="df-status-row">
+      <span class="df-status-chip">NODE OPERASIONAL: BDG-KOTA-01 (ONLINE)</span>
+      <span class="df-status-chip df-status-chip--muted">ENKRIPSI TLS 1.3 TERVERIFIKASI</span>
+    </div>
+
+    <h1 class="df-login-card__title">Masuk ke Akun Anda</h1>
+    <p class="df-login-card__subtitle">Silakan masukkan kredensial resmi distributor.</p>
+
+    <div id="login-alert" class="df-alert df-alert--error" role="alert" hidden></div>
+
+    <form id="login-form" novalidate>
+      <div class="df-field">
+        <label class="df-label" for="username">Username <span class="df-required" aria-hidden="true">*</span></label>
+        <input class="df-input" id="username" name="username" type="text" maxlength="50"
+               autocomplete="username" placeholder="kasir.utama">
+        <span class="df-help">Maks. 50 karakter</span>
+      </div>
+
+      <div class="df-field">
+        <label class="df-label" for="password">Password <span class="df-required" aria-hidden="true">*</span></label>
+        <div class="df-password-wrap">
+          <input class="df-input" id="password" name="password" type="password"
+                 autocomplete="current-password" placeholder="Masukkan password">
+          <button class="df-password-toggle" type="button" data-password-toggle="password"
+                  aria-label="Tampilkan password">Tampilkan</button>
+        </div>
+      </div>
+
+      <div class="df-form-actions">
+        <button id="login-submit" class="df-btn df-btn--primary" type="submit">Login →</button>
+      </div>
+    </form>
+
+    <footer class="df-login-card__footer">
+      <p>Bantuan IT Gudang: ext 402</p>
+      <p>Akses dibatasi hanya untuk staf distributor terdaftar.</p>
+      <p>© 2026 DistriFlow · Distribusi &amp; POS Bandung</p>
+    </footer>
+  </main>
+</body>
+</html>

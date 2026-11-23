@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Daftar dan kelola pengguna DistriFlow">
+  <title>Manajemen Pengguna — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/users.js" defer></script>
+</head>
+<body>
+  <div class="df-app">
+    <aside class="df-sidebar" aria-label="Menu utama"></aside>
+
+    <div class="df-main">
+      <header class="df-topbar">
+        <h1 class="df-topbar__title">Manajemen Pengguna</h1>
+
+        <div class="df-topbar__actions">
+          <div class="df-user-chip">
+            <div id="user-avatar" class="df-user-chip__avatar" aria-hidden="true">?</div>
+            <div>
+              <div id="user-name" class="df-user-chip__name">Memuat…</div>
+              <div id="user-role" class="df-user-chip__role">Memuat…</div>
+            </div>
+          </div>
+          <button id="logout-button" class="df-btn df-btn--secondary" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <main class="df-content">
+        <div class="df-breadcrumb">Pengaturan Akun / Manajemen Pengguna Sistem</div>
+
+        <div class="df-page-header">
+          <div>
+            <h2>Daftar Pengguna</h2>
+            <p>Kelola akun, peran, dan status akses pengguna sistem.</p>
+          </div>
+          <a id="add-user" class="df-btn df-btn--primary" href="/pages/user-form.html">+ Tambah Pengguna</a>
+        </div>
+
+        <div id="users-alert" class="df-alert" role="alert" hidden></div>
+
+        <section class="df-card" aria-labelledby="user-table-title">
+          <h3 id="user-table-title" class="df-card__title">Data Pengguna</h3>
+          <p id="user-count" class="df-card__subtitle">Memuat daftar pengguna…</p>
+
+          <form id="user-filters" class="df-toolbar" novalidate>
+            <input id="user-search" class="df-input df-user-search" type="search"
+                   placeholder="Cari pengguna..." aria-label="Cari nama atau username pengguna">
+
+            <select id="role-filter" class="df-select" aria-label="Filter peran">
+              <option value="">Semua Peran</option>
+              <option value="ADMIN">Admin</option>
+              <option value="SALES">Sales</option>
+              <option value="KASIR">Kasir</option>
+              <option value="GUDANG">Gudang</option>
+            </select>
+
+            <select id="status-filter" class="df-select" aria-label="Filter status">
+              <option value="">Semua Status</option>
+              <option value="true">Aktif</option>
+              <option value="false">Nonaktif</option>
+            </select>
+
+            <button id="filter-reset" class="df-btn df-btn--secondary" type="button">Reset</button>
+          </form>
+
+          <div class="df-table-wrap">
+            <table class="df-table">
+              <thead>
+                <tr>
+                  <th scope="col">Nama</th>
+                  <th scope="col">Username</th>
+                  <th scope="col">Peran</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="df-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="users-body"></tbody>
+            </table>
+          </div>
+
+          <div class="df-pagination">
+            <span id="pagination-info" class="df-pagination__info"></span>
+            <button id="prev-page" class="df-btn df-btn--secondary df-btn--sm" type="button">Sebelumnya</button>
+            <span id="page-label" class="df-kbd">1</span>
+            <button id="next-page" class="df-btn df-btn--secondary df-btn--sm" type="button">Berikutnya</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

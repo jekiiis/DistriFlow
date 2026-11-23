@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Dashboard DistriFlow">
+  <title>Dashboard — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/dashboard.js" defer></script>
+</head>
+<body>
+  <div class="df-app">
+    <aside class="df-sidebar" aria-label="Menu utama"></aside>
+
+    <div class="df-main">
+      <header class="df-topbar">
+        <h1 class="df-topbar__title">Dashboard</h1>
+
+        <div class="df-topbar__actions">
+          <div class="df-user-chip">
+            <div id="user-avatar" class="df-user-chip__avatar" aria-hidden="true">?</div>
+            <div>
+              <div id="user-name" class="df-user-chip__name">Memuat…</div>
+              <div id="user-role" class="df-user-chip__role">Memuat…</div>
+            </div>
+          </div>
+          <button id="logout-button" class="df-btn df-btn--secondary" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <main class="df-content">
+        <div class="df-breadcrumb">Beranda / Dashboard</div>
+
+        <div id="dashboard-alert" class="df-alert df-alert--error" role="alert" hidden></div>
+
+        <section class="df-welcome" aria-labelledby="welcome-title">
+          <span class="df-welcome__eyebrow">Ringkasan Operasional</span>
+          <h2 id="welcome-title">Selamat datang, <span id="welcome-name">Pengguna</span></h2>
+          <p id="welcome-text">Role Anda: <span id="welcome-role">-</span>. Gunakan pintasan berikut untuk memulai pekerjaan Anda.</p>
+          <span id="today-label" class="df-welcome__date"></span>
+        </section>
+
+        <section aria-labelledby="shortcut-title">
+          <div class="df-page-header">
+            <div>
+              <h2 id="shortcut-title">Pintasan Menu</h2>
+              <p>Akses cepat fitur Sprint 1 sesuai peran Anda.</p>
+            </div>
+          </div>
+
+          <div class="df-shortcuts">
+            <a class="df-shortcut" href="/pages/dashboard.html">
+              <span class="df-shortcut__icon" aria-hidden="true">⌂</span>
+              <span>
+                <span class="df-shortcut__title">Dashboard</span>
+                <span class="df-shortcut__desc">Halaman awal setelah login.</span>
+              </span>
+            </a>
+
+            <a class="df-shortcut" href="/pages/change-password.html">
+              <span class="df-shortcut__icon" aria-hidden="true">⚿</span>
+              <span>
+                <span class="df-shortcut__title">Ganti Password</span>
+                <span class="df-shortcut__desc">Perbarui kata sandi akun Anda.</span>
+              </span>
+            </a>
+
+            <a id="shortcut-users" class="df-shortcut df-hidden" href="/pages/users.html">
+              <span class="df-shortcut__icon" aria-hidden="true">⚙</span>
+              <span>
+                <span class="df-shortcut__title">Manajemen Pengguna</span>
+                <span class="df-shortcut__desc">Kelola akun dan peran pengguna.</span>
+              </span>
+            </a>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Form tambah dan ubah pengguna DistriFlow">
+  <title>Form Pengguna — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/user-form.js" defer></script>
+</head>
+<body>
+  <div class="df-app">
+    <aside class="df-sidebar" aria-label="Menu utama"></aside>
+
+    <div class="df-main">
+      <header class="df-topbar">
+        <h1 id="topbar-title" class="df-topbar__title">Form Pengguna</h1>
+
+        <div class="df-topbar__actions">
+          <div class="df-user-chip">
+            <div id="user-avatar" class="df-user-chip__avatar" aria-hidden="true">?</div>
+            <div>
+              <div id="user-name" class="df-user-chip__name">Memuat…</div>
+              <div id="user-role" class="df-user-chip__role">Memuat…</div>
+            </div>
+          </div>
+          <button id="logout-button" class="df-btn df-btn--secondary" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <main class="df-content">
+        <div id="breadcrumb" class="df-breadcrumb">Pengaturan Akun / Manajemen Pengguna / Tambah Pengguna</div>
+
+        <div class="df-page-header">
+          <div>
+            <h2 id="page-title">Tambah Pengguna Baru</h2>
+            <p id="page-subtitle">Buat akun baru dengan peran dan kredensial awal.</p>
+          </div>
+          <a class="df-btn df-btn--secondary" href="/pages/users.html">← Kembali ke Daftar Pengguna</a>
+        </div>
+
+        <div id="form-alert" class="df-alert" role="alert" hidden></div>
+
+        <section class="df-card df-form-card" aria-labelledby="form-title">
+          <h3 id="form-title" class="df-card__title">Data Pengguna</h3>
+          <p id="form-subtitle" class="df-card__subtitle">Isi data berikut sesuai ketentuan sistem.</p>
+
+          <form id="user-form" novalidate>
+            <div class="df-field">
+              <label class="df-label" for="name">Nama Lengkap <span class="df-required" aria-hidden="true">*</span></label>
+              <input class="df-input" id="name" name="name" type="text" maxlength="100"
+                     autocomplete="name" placeholder="Nama pengguna">
+            </div>
+
+            <div class="df-field">
+              <label class="df-label" for="username">Username <span class="df-required" aria-hidden="true">*</span></label>
+              <input class="df-input" id="username" name="username" type="text" maxlength="50"
+                     autocomplete="off" placeholder="Tanpa spasi">
+              <span id="username-help" class="df-help">Maks. 50 karakter dan tidak boleh mengandung spasi.</span>
+              <span id="username-note" class="df-readonly-note df-hidden">Username tidak dapat diubah setelah pengguna dibuat.</span>
+            </div>
+
+            <div class="df-field">
+              <label class="df-label" for="password">
+                <span id="password-label">Password</span> <span class="df-required" aria-hidden="true">*</span>
+              </label>
+              <div class="df-password-wrap">
+                <input class="df-input" id="password" name="password" type="password"
+                       autocomplete="new-password" placeholder="Minimal 8 karakter">
+                <button class="df-password-toggle" type="button" data-password-toggle="password"
+                        aria-label="Tampilkan password">Tampilkan</button>
+              </div>
+              <span id="password-help" class="df-help">Minimal 8 karakter, maksimal 72 byte UTF-8.</span>
+            </div>
+
+            <div class="df-field">
+              <label class="df-label" for="role">Peran <span class="df-required" aria-hidden="true">*</span></label>
+              <select class="df-select" id="role" name="role">
+                <option value="">Pilih Peran</option>
+                <option value="ADMIN">Admin</option>
+                <option value="SALES">Sales</option>
+                <option value="KASIR">Kasir</option>
+                <option value="GUDANG">Gudang</option>
+              </select>
+            </div>
+
+            <div id="status-field" class="df-field df-hidden">
+              <label class="df-label" for="status">Status Akun</label>
+              <select class="df-select" id="status" name="status">
+                <option value="true">Aktif</option>
+                <option value="false">Nonaktif</option>
+              </select>
+              <span class="df-help">Menonaktifkan akun akan mengakhiri sesi pengguna tersebut.</span>
+            </div>
+
+            <p id="create-status-note" class="df-help">Pengguna baru dibuat dalam status Aktif.</p>
+
+            <div class="df-form-actions">
+              <a class="df-btn df-btn--secondary" href="/pages/users.html">Batal</a>
+              <button id="save-button" class="df-btn df-btn--primary" type="submit">Simpan</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

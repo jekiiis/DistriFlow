@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Environment with real secrets (only .env.example is committed)
+.env
+backend/.env
+
+# Logs
+*.log
+logs/
+
+# Editor and OS artifacts
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test / coverage artifacts
+coverage/
+
+# Local files
+AGENTS.md
+.opencode/
+.codex/
+
+# Documents
+*.pdf
