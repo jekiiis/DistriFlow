@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pembayaran sales order DistriFlow">
+  <title>Pembayaran Sales Order — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/payment.js" defer></script>
+</head>
+<body>
+  <div class="df-app">
+    <aside class="df-sidebar" aria-label="Menu utama"></aside>
+
+    <div class="df-main">
+      <header class="df-topbar">
+        <h1 class="df-topbar__title">Pembayaran Sales Order</h1>
+
+        <div class="df-topbar__actions">
+          <div class="df-user-chip">
+            <div id="user-avatar" class="df-user-chip__avatar" aria-hidden="true">?</div>
+            <div>
+              <div id="user-name" class="df-user-chip__name">Memuat…</div>
+              <div id="user-role" class="df-user-chip__role">Memuat…</div>
+            </div>
+          </div>
+          <button id="logout-button" class="df-btn df-btn--secondary" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <main class="df-content">
+        <div class="df-breadcrumb">Penjualan / Daftar Sales Order / Pembayaran</div>
+
+        <div class="df-page-header">
+          <div>
+            <h2 id="payment-title">Pembayaran</h2>
+            <p id="payment-subtitle">Memuat tagihan sales order…</p>
+          </div>
+          <a class="df-btn df-btn--secondary" href="/pages/orders.html">← Kembali ke Daftar Order</a>
+        </div>
+
+        <div id="payment-alert" class="df-alert" role="alert" hidden></div>
+
+        <section class="df-card" aria-labelledby="bill-title">
+          <h3 id="bill-title" class="df-card__title">Rincian Tagihan</h3>
+          <p id="summary-status" class="df-card__subtitle">Memuat data order…</p>
+
+          <div class="df-grid df-grid--2">
+            <div class="df-readonly-note">No. Order <strong id="summary-order-no">-</strong></div>
+            <div class="df-readonly-note">Pelanggan <strong id="summary-customer">-</strong></div>
+            <div class="df-readonly-note">Total tagihan <strong id="summary-total">Rp0</strong></div>
+            <div class="df-readonly-note">Sisa limit kredit <strong id="summary-remaining">-</strong></div>
+          </div>
+
+          <div class="df-table-wrap">
+            <table class="df-table">
+              <thead>
+                <tr>
+                  <th scope="col">Kode</th>
+                  <th scope="col">Nama</th>
+                  <th scope="col" class="df-right">Harga</th>
+                  <th scope="col" class="df-right">Qty</th>
+                  <th scope="col" class="df-right">Diskon</th>
+                  <th scope="col" class="df-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody id="payment-items-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="df-card" aria-labelledby="payment-form-title">
+          <h3 id="payment-form-title" class="df-card__title">Form Pembayaran</h3>
+
+          <form id="payment-form" novalidate>
+            <div class="df-field">
+              <span class="df-label">Jenis Pembayaran <span class="df-required" aria-hidden="true">*</span></span>
+              <label class="df-checkbox">
+                <input id="type-tunai" type="radio" name="payment-type" value="TUNAI" checked> Tunai
+              </label>
+              <label class="df-checkbox">
+                <input id="type-kredit" type="radio" name="payment-type" value="KREDIT"> Kredit
+              </label>
+              <span id="credit-hint" class="df-help">Kredit tersedia sesuai sisa limit pelanggan.</span>
+            </div>
+
+            <div class="df-form-grid">
+              <div class="df-field">
+                <label class="df-label" for="payment-method">Metode</label>
+                <select id="payment-method" class="df-select">
+                  <option value="TUNAI">Tunai</option>
+                  <option value="TRANSFER">Transfer</option>
+                </select>
+              </div>
+
+              <div class="df-field">
+                <label class="df-label" for="payment-nominal">Nominal Diterima <span class="df-required" aria-hidden="true">*</span></label>
+                <input id="payment-nominal" class="df-input" type="text" inputmode="decimal"
+                       placeholder="0" autocomplete="off" disabled>
+                <span class="df-help">Nominal tunai lebih besar dari total akan menjadi kembalian.</span>
+              </div>
+
+              <div class="df-field">
+                <label class="df-label" for="payment-note">Catatan</label>
+                <textarea id="payment-note" class="df-textarea" maxlength="255"
+                          placeholder="Catatan pembayaran (opsional)"></textarea>
+              </div>
+            </div>
+
+            <div id="payment-preview" class="df-alert df-hidden" role="status"></div>
+
+            <div class="df-form-actions">
+              <button id="process-button" class="df-btn df-btn--primary" type="submit" disabled>Proses Pembayaran</button>
+            </div>
+          </form>
+        </section>
+
+        <section id="invoice-card" class="df-card df-hidden" aria-labelledby="invoice-title">
+          <h3 id="invoice-title" class="df-card__title">Cetak Invoice</h3>
+          <p id="invoice-status" class="df-card__subtitle">Status pembayaran: -</p>
+
+          <div class="df-toolbar">
+            <select id="invoice-format" class="df-select" aria-label="Format invoice">
+              <option value="a4">A4</option>
+              <option value="80mm">80 mm</option>
+            </select>
+            <button id="print-invoice" class="df-btn df-btn--secondary" type="button">Cetak Invoice</button>
+          </div>
+
+          <div id="payment-result" class="df-readonly-note df-hidden">
+            Nominal diterima <strong id="result-amount">-</strong> ·
+            Kembalian <strong id="result-change">-</strong> ·
+            Terpakai <strong id="result-used">-</strong>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

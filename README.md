@@ -4,7 +4,9 @@ Sistem penjualan, invoice, dan piutang untuk satu distributor dengan satu gudang
 
 Dokumen ini merupakan panduan teknis singkat untuk instalasi, konfigurasi, dan penggunaan aplikasi DistriFlow.
 
-**Status saat ini:** Sprint 0 dan Sprint 1 selesai. Sprint 2 dan Sprint 3 belum dikerjakan.
+**Status saat ini:** Sprint 0 dan Sprint 1 selesai. Sprint 2 (UC-03 dan UC-04) sudah diimplementasikan;
+status per task dan hasil verifikasi ada di [`docs/SPRINT_2_FINAL_REPORT.md`](docs/SPRINT_2_FINAL_REPORT.md).
+Sprint 3 belum dikerjakan.
 
 ## 1. Tujuan dan ruang lingkup
 
@@ -14,9 +16,13 @@ Ruang lingkup yang sudah tersedia sekarang:
 - **Sprint 0:** fondasi proyek, schema dan seed basis data, koneksi MySQL, konfigurasi session,
   header keamanan, serta kerangka pengujian.
 - **Sprint 1:** autentikasi, manajemen pengguna, Page Guard/otorisasi API, dan frontend UI-01…UI-05.
+- **Sprint 2:** katalog read-only, sales order DRAFT, daftar/detail order, pembayaran tunai/kredit,
+  invoice PDF, frontend UI-06…UI-09, dan dokumentasi API yang diperbarui.
 
-Fitur use case bisnis UC-01…UC-07 yang direncanakan untuk Sprint 2 dan Sprint 3 **belum diimplementasikan**.
-Batasan versi 1.0 tercatat di [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
+UC-01 (manajemen master), UC-05/UC-06 (pelunasan piutang), UC-07 (laporan/KPI), Purchase Order,
+dan fitur Sprint 3 lainnya **belum diimplementasikan**. FR-09 (pembatalan order) dan FR-22
+(`risk_score`/`risk_label`) juga ditunda ke Sprint 3. Batasan versi 1.0 tercatat di
+[`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 
 ## 2. Teknologi yang digunakan
 
@@ -37,8 +43,10 @@ Node.js yang terpakai saat pengembangan terverifikasi v24.21.0; kode ditulis kom
 DistriFlow\
 ├── docs\
 │   ├── ASSUMPTIONS.md          # keputusan yang sudah disetujui + batasan v1.0
-│   ├── API.md                  # kontrak endpoint aktual
-│   └── SPRINT_1_REPORT.md      # laporan hasil Sprint 1
+│   ├── API.md                  # kontrak endpoint aktual Sprint 1 + Sprint 2
+│   ├── SPRINT_1_REPORT.md      # laporan hasil Sprint 1
+│   ├── SPRINT_2_PLANNING.md    # planning dan keputusan Sprint 2
+│   └── SPRINT_2_FINAL_REPORT.md # laporan akhir Sprint 2
 ├── database\
 │   ├── 01_schema.sql           # tepat 7 tabel bisnis
 │   └── 02_seed.sql             # data kanonik, termasuk 4 akun demo
@@ -51,15 +59,16 @@ DistriFlow\
 │   │   ├── config\             # env, db, session
 │   │   ├── helpers\            # response, AppError, asyncHandler
 │   │   ├── middleware\         # auth, role, page guard, validate, validators
-│   │   ├── routes\             # authRoutes, userRoutes, index
+│   │   ├── routes\             # auth, users, customers, products, orders, payments, invoice, index
 │   │   ├── controllers\
-│   │   ├── services\
-│   │   └── models\
+│   │   ├── services\           # termasuk orderService, paymentService, pdfService, invoiceService
+│   │   └── models\             # termasuk customerModel, productModel, orderModel, paymentModel
 │   └── tests\
 ├── frontend\
 │   ├── css\style.css
-│   ├── js\                     # api, ui, login, dashboard, change-password, users, user-form
-│   └── pages\                  # login, dashboard, change-password, users, user-form
+│   ├── js\                     # api, ui, dan skrip UI-01…UI-09
+│   └── pages\                  # login, dashboard, change-password, users, user-form,
+│                               # sales-order, orders, order-detail, payment
 ```
 
 Tidak ada folder `distriflow` bersarang. Semua path di atas relatif terhadap root `DistriFlow`.
@@ -82,7 +91,8 @@ cd backend
 npm install
 ```
 
-Tidak ada dependency baru yang ditambahkan pada Sprint 1.
+Tidak ada dependency baru yang ditambahkan pada Sprint 1 maupun Sprint 2. `pdfkit` sudah terpasang
+sejak fondasi dan dipakai untuk invoice PDF.
 
 ## 6. Konfigurasi environment variable
 
@@ -163,7 +173,14 @@ npm run lint   # ESLint untuk src, tests, dan scripts
 npm test       # Jest + Supertest, --runInBand
 ```
 
-Hasil terakhir pada Sprint 1: `npm run lint` exit code 0; `npm test` 8 suite dan 131/131 test lolos.
+Hasil verifikasi terakhir Sprint 2: `npm run lint` exit 0, `npm test` **21 suite / 288 test lolos**,
+`node --check` **78 file / 0 gagal**, integrasi MariaDB pada database isolasi **10/10 checks lolos**,
+dan browser headless aplikasi asli **111/111 checks lolos**. Rincian endpoint, peran, transaksi,
+stok, dan invoice tercatat di
+[`docs/SPRINT_2_FINAL_REPORT.md`](docs/SPRINT_2_FINAL_REPORT.md).
+
+Perintah yang wajib dijalankan sebelum menutup sprint: `npm run lint`, `npm test`, dan `node --check`
+untuk file JavaScript yang dibuat/diubah.
 
 ## 11. URL aplikasi lokal
 URL berikut menggunakan port default `3000`. Jika nilai `PORT` pada `.env` berbeda, sesuaikan port pada URL.
@@ -176,7 +193,11 @@ URL berikut menggunakan port default `3000`. Jika nilai `PORT` pada `.env` berbe
 | `http://localhost:3000/pages/change-password.html` | UI-03 Ganti Password (semua role login) |
 | `http://localhost:3000/pages/users.html` | UI-04 Daftar Pengguna (khusus ADMIN) |
 | `http://localhost:3000/pages/user-form.html` | UI-05 Form Tambah/Ubah Pengguna (khusus ADMIN) |
-| `http://localhost:3000/api/...` | REST API JSON; daftar lengkap di [`docs/API.md`](docs/API.md) |
+| `http://localhost:3000/pages/sales-order.html` | UI-06 Sales Order Baru (ADMIN, SALES) |
+| `http://localhost:3000/pages/orders.html` | UI-07 Daftar Sales Order (ADMIN, SALES, KASIR) |
+| `http://localhost:3000/pages/order-detail.html?id=1` | UI-08 Detail Sales Order (ADMIN, SALES, KASIR) |
+| `http://localhost:3000/pages/payment.html?id=1` | UI-09 Pembayaran (khusus KASIR) |
+| `http://localhost:3000/api/...` | REST API; daftar lengkap di [`docs/API.md`](docs/API.md) |
 
 Halaman di luar allowlist Page Guard tidak disajikan. Pengujian integrasi memakai database isolasi
 sementara agar data seed dan sesi asli tidak berubah.
@@ -202,7 +223,11 @@ Password disimpan sebagai hash bcrypt cost 10, bukan teks biasa, dan tidak perna
   1.4 Page Guard dan API Authorization; 1.5 Authentication Frontend (UI-01…UI-03);
   1.6 User Management Frontend (UI-04…UI-05); 1.7 Complete Testing & Manual Verification;
   1.8 Documentation & Sprint 1 Report.
-- Rincian hasil dan temuan ada di [`docs/SPRINT_1_REPORT.md`](docs/SPRINT_1_REPORT.md).
+- **Sprint 2 terimplementasi:** Task 2.1 katalog, 2.3 sales order, 2.4 daftar/detail order,
+  2.6 pembayaran, 2.7 invoice PDF, 2.8 Page Guard/navigasi, 2.9…2.11 frontend UI-06…UI-09,
+  dan 2.12 pengujian/dokumentasi. FR-09 dan FR-22 tetap ditunda ke Sprint 3.
+- Rincian hasil Sprint 1 ada di [`docs/SPRINT_1_REPORT.md`](docs/SPRINT_1_REPORT.md);
+  status dan temuan Sprint 2 ada di [`docs/SPRINT_2_FINAL_REPORT.md`](docs/SPRINT_2_FINAL_REPORT.md).
 
 ## 14. Batasan versi 1.0
 
@@ -218,6 +243,5 @@ Dokumentasi tambahan:
 
 - [`docs/API.md`](docs/API.md) — kontrak endpoint yang benar-benar tersedia.
 - [`docs/SPRINT_1_REPORT.md`](docs/SPRINT_1_REPORT.md) — laporan hasil Sprint 1.
-=======
-# DistriFlow
->>>>>>> origin/main
+- [`docs/SPRINT_2_PLANNING.md`](docs/SPRINT_2_PLANNING.md) — planning dan keputusan Sprint 2.
+- [`docs/SPRINT_2_FINAL_REPORT.md`](docs/SPRINT_2_FINAL_REPORT.md) — laporan akhir Sprint 2.

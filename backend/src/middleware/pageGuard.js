@@ -8,13 +8,21 @@ const AUTHENTICATED = 'AUTHENTICATED';
 const LOGIN_PAGE = '/pages/login.html';
 const DASHBOARD_PAGE = '/pages/dashboard.html';
 
-// Allowlist halaman Sprint 1. Path disimpan kanonik, bukan berasal dari input pengguna.
+const SALES_ORDER_ROLES = Object.freeze(['SALES', 'ADMIN']);
+const ORDER_ROLES = Object.freeze(['ADMIN', 'SALES', 'KASIR']);
+
+// Allowlist kanonik. Path disimpan eksplisit, bukan berasal dari input pengguna.
+// Role dapat berupa string (satu peran) atau array (beberapa peran).
 const PAGE_ACCESS = Object.freeze({
   '/pages/login.html': PUBLIC,
   '/pages/dashboard.html': AUTHENTICATED,
   '/pages/change-password.html': AUTHENTICATED,
   '/pages/users.html': 'ADMIN',
-  '/pages/user-form.html': 'ADMIN'
+  '/pages/user-form.html': 'ADMIN',
+  '/pages/sales-order.html': SALES_ORDER_ROLES,
+  '/pages/orders.html': ORDER_ROLES,
+  '/pages/order-detail.html': ORDER_ROLES,
+  '/pages/payment.html': 'KASIR'
 });
 
 function resolvePathname(req) {
@@ -39,6 +47,9 @@ function canAccess(rule, user) {
   }
   if (rule === AUTHENTICATED) {
     return true;
+  }
+  if (Array.isArray(rule)) {
+    return rule.includes(user.role);
   }
   return user.role === rule;
 }

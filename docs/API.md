@@ -1,25 +1,36 @@
-# DistriFlow — Dokumentasi API (Sprint 1)
+# DistriFlow — Dokumentasi API (Sprint 1 + Sprint 2)
 
-Dokumen ini mencatat **tepat 8 endpoint** yang benar-benar tersedia pada Sprint 1.
-Sumber kebenaran: `backend/src/routes/`, `controllers/`, `services/`, `middleware/validators/`, dan `models/`.
-Endpoint di luar daftar ini **belum ada**; Sprint 2 dan Sprint 3 belum dikerjakan.
+Dokumen ini mencatat endpoint yang **benar-benar tersedia** setelah Sprint 2. Sumber kebenaran:
+`backend/src/routes/`, `controllers/`, `services/`, `middleware/validators/`, dan `models/`.
 
-Semua endpoint menggunakan prefix `/api`. Format respons mengikuti `src/helpers/response.js`:
+> Jumlah endpoint aktual adalah **17**: 8 endpoint Sprint 1, 4 endpoint katalog Sprint 2,
+> 3 endpoint order, 1 endpoint pembayaran, dan 1 endpoint invoice. Planning Sprint 2
+> memperkirakan 18 endpoint; tidak ada endpoint kanonik ke-18 yang diimplementasikan, jadi
+> daftar ini sengaja tidak ditambahi endpoint rekaan.
 
-- Sukses: `{ "success": true, "message": "...", "data": ... }`
-- Gagal: `{ "success": false, "message": "...", "errors": [{ "field": "...", "message": "..." }] }`
-  (`errors` hanya ada pada kegagalan validasi)
+FR-09 (pembatalan order) dan FR-22 (`risk_score`/`risk_label`) ditunda ke Sprint 3. Tidak ada
+endpoint cancel order dan tidak ada field risiko pada respons API.
 
-Semua request/response bertipe JSON. Karena sesi disimpan di server melalui cookie, klien harus
-mengirim cookie yang sama pada setiap request (`credentials: 'same-origin'` di browser).
-Nama cookie sesi: `distriflow.sid`.
+## Konvensi umum
 
-> Semua nilai di bawah adalah **data dummy**. Jangan memakai credential asli dalam contoh.
+- Prefix semua endpoint: `/api`.
+- Kecuali invoice, request dan response bertipe `application/json`.
+- Sukses: `{ "success": true, "message": "...", "data": ... }`.
+- Gagal: `{ "success": false, "message": "...", "errors": [...] }`; `errors` hanya muncul
+  pada kegagalan validasi `express-validator`.
+- Sesi disimpan di server dan dikirim memakai cookie `HttpOnly` `SameSite=Strict`. Browser
+  wajib memakai `credentials: 'same-origin'`.
+- Nominal uang dikirim sebagai string desimal dua angka, misalnya `"75000.00"`, dan selalu
+  dihitung ulang di server memakai integer sen.
+- Semua contoh memakai data dummy; tidak ada credential asli di dokumen ini.
+
+Kode status: `400` validasi, `401` sesi/credential, `403` peran, `404` tidak ditemukan,
+`409` konflik bisnis, `500` kesalahan server tak tertangani.
 
 ## Ringkasan endpoint
 
 | # | Method | URL | Auth | Role |
-|---|---|---|---|---|
+|---:|---|---|---|---|
 | 1 | `POST` | `/api/auth/login` | Tidak | Publik |
 | 2 | `POST` | `/api/auth/logout` | Ya | Semua role login |
 | 3 | `GET` | `/api/auth/me` | Ya | Semua role login |
@@ -28,477 +39,338 @@ Nama cookie sesi: `distriflow.sid`.
 | 6 | `GET` | `/api/users/:id` | Ya | ADMIN |
 | 7 | `POST` | `/api/users` | Ya | ADMIN |
 | 8 | `PUT` | `/api/users/:id` | Ya | ADMIN |
+| 9 | `GET` | `/api/customers` | Ya | ADMIN, SALES, KASIR |
+| 10 | `GET` | `/api/customers/:id/credit` | Ya | ADMIN, SALES |
+| 11 | `GET` | `/api/products` | Ya | Semua role login |
+| 12 | `GET` | `/api/products/by-code/:code` | Ya | ADMIN, SALES |
+| 13 | `POST` | `/api/orders` | Ya | ADMIN, SALES |
+| 14 | `GET` | `/api/orders` | Ya | ADMIN, SALES, KASIR |
+| 15 | `GET` | `/api/orders/:id` | Ya | ADMIN, SALES, KASIR |
+| 16 | `POST` | `/api/orders/:id/payments` | Ya | KASIR |
+| 17 | `GET` | `/api/orders/:id/invoice.pdf` | Ya | ADMIN, KASIR |
 
-Ketika permintaan ke endpoint user tanpa sesi, backend menjawab `401` dengan pesan
-`Sesi berakhir, silakan login kembali`. Role selain ADMIN mendapat `403` dengan pesan
+Tanpa sesi, endpoint terlindungi menjawab `401` dengan pesan
+`Sesi berakhir, silakan login kembali`. Role yang tidak diizinkan menjawab `403` dengan pesan
 `Anda tidak memiliki hak akses untuk operasi ini`.
 
 ---
 
 ## 1. POST /api/auth/login
 
-- **Authentication:** tidak diperlukan (publik).
-- **Role:** tidak ada.
-- **Query parameter:** tidak ada.
-- **Request body:**
+Publik. Body: `{ "username": "dummy_user", "password": "dummy_pass_123" }`.
 
-  ```json
-  { "username": "dummy_user", "password": "dummy_pass_123" }
-  ```
-
-- **Proses:** `authValidator.login` → `validate` → `authService.login` → `regenerateSession` →
-  simpan `req.session.user` → `saveSession`. Session ID diregenerasi setelah kredensial valid.
-
-### Respons sukses — 200
-
-```json
-{
-  "success": true,
-  "message": "Login berhasil",
-  "data": {
-    "user": {
-      "id": 1,
-      "name": "Nama Dummy",
-      "username": "dummy_user",
-      "role": "ADMIN"
-    }
-  }
-}
-```
-
-### Respons error
+Sukses `200`: `data.user = { id, name, username, role }`. Session ID diregenerasi setelah
+kredensial valid; hash password tidak pernah dikembalikan.
 
 | Status | `message` | Penyebab |
 |---|---|---|
-| `400` | `Username dan password wajib diisi` | Field kosong/tidak ada (dari validator) |
-| `400` | `Username dan password wajib diisi` | Field kosong setelah trim (dari service) |
-| `401` | `Username atau password salah` | Username tidak ditemukan atau password salah |
-| `401` | `Akun terkunci sementara, coba lagi dalam 5 menit` | Akun dalam masa lockout 5 menit |
-| `401` | `Akun tidak aktif, hubungi Admin` | Password benar tetapi akun nonaktif |
-| `500` | `Terjadi kesalahan pada server` | Error tak tertangani di luar `AppError` |
+| `400` | `Username dan password wajib diisi` | Field kosong |
+| `401` | `Username atau password salah` | Kredensial salah |
+| `401` | `Akun terkunci sementara, coba lagi dalam 5 menit` | Lockout 5 menit aktif |
+| `401` | `Akun tidak aktif, hubungi Admin` | Password benar, akun nonaktif |
 
-Contoh error:
-
-```json
-{ "success": false, "message": "Username atau password salah" }
-```
-
-Contoh error validasi:
-
-```json
-{
-  "success": false,
-  "message": "Username dan password wajib diisi",
-  "errors": [
-    { "field": "username", "message": "Username dan password wajib diisi" }
-  ]
-}
-```
-
-### Validasi dan business rules
-
-- `username` dan `password` wajib ada dan tidak falsy.
-- Password dibandingkan dengan hash bcrypt cost 10; hash tidak pernah dikembalikan.
-- **5 kali gagal** menaikkan `failed_attempts`, lalu pada percobaan kelima memasang lockout 5 menit
-  dan mengembalikan `failed_attempts` ke 0. Percobaan kelima masih gagal; setelah itu login ditolak
-  dengan pesan lockout sampai masa berlaku habis.
-- Login berhasil mereset `failed_attempts`, menghapus `locked_until`, dan mencatat `last_login_at`.
-- Akun nonaktif ditolak; statusnya dicek setelah pencocokan password.
-- Session ID diregenerasi setelah login berhasil (mencegah session fixation).
-
----
+Lima kegagalan dalam jendela 5 menit mengunci akun. Login berhasil mereset
+`failed_attempts`, `locked_until`, dan mencatat `last_login_at`.
 
 ## 2. POST /api/auth/logout
 
-- **Authentication:** wajib (`requireLogin`).
-- **Role:** semua role yang login.
-- **Query parameter:** tidak ada.
-- **Request body:** tidak ada.
-- **Proses:** `req.session.destroy()` lalu `res.clearCookie('distriflow.sid', ...)`.
-
-### Respons sukses — 200
-
-```json
-{ "success": true, "message": "Logout berhasil", "data": null }
-```
-
-### Respons error
-
-| Status | `message` | Penyebab |
-|---|---|---|
-| `401` | `Sesi berakhir, silakan login kembali` | Tidak ada sesi aktif |
-| `500` | `Terjadi kesalahan pada server` | Gagal menghancurkan sesi |
-
-### Validasi dan business rules
-
-- Logout selalu menghancurkan sesi dan menghapus cookie di sisi klien.
-- Tidak ada endpoint logout semua perangkat pada Sprint 1.
-
----
+Semua role login. Menghancurkan sesi dan menghapus cookie. Sukses:
+`{ "success": true, "message": "Logout berhasil", "data": null }`.
 
 ## 3. GET /api/auth/me
 
-- **Authentication:** wajib (`requireLogin`).
-- **Role:** semua role yang login.
-- **Query parameter:** tidak ada.
-- **Request body:** tidak ada.
+Semua role login. Mengembalikan `data.user` dari `req.session.user`:
+`{ id, name, username, role }`. Tidak ada query database baru dan tidak ada field sensitif.
 
-### Respons sukses — 200
+## 4. PUT /api/auth/password
+
+Semua role login. Body:
+`{ "oldPassword": "...", "newPassword": "...", "confirmPassword": "..." }`.
+
+Password baru minimal 8 karakter, maksimal 72 byte UTF-8, berbeda dari password lama, dan
+cocok dengan konfirmasi. Hash memakai bcrypt cost 10. Sesi saat ini tetap aktif; endpoint ini
+tidak menghapus lockout.
+
+Pesan `400` yang mungkin: `Field wajib diisi`, `Password minimal 8 karakter`,
+`Password maksimal 72 byte`, `Password lama salah`, `Konfirmasi password tidak sama`,
+`Password baru harus berbeda dari password lama`.
+
+## 5. GET /api/users
+
+Khusus ADMIN. Query opsional: `q`/`search`, `role`, `is_active`, `page`, `limit` (maksimal 100).
+Respons: `data.users` dan `data.pagination = { page, limit, total, totalPages }`.
+
+## 6. GET /api/users/:id
+
+Khusus ADMIN. `data.user` tidak memuat password maupun hash. `404`: `Pengguna tidak ditemukan`.
+
+## 7. POST /api/users
+
+Khusus ADMIN. Body: `{ name, username, password, role }`. Role salah satu
+`ADMIN|SALES|KASIR|GUDANG`. Username tidak dapat diubah setelah dibuat. `409` untuk username
+duplikat; `400` untuk password/role invalid.
+
+## 8. PUT /api/users/:id
+
+Khusus ADMIN. Body boleh berisi `name`, `role`, `is_active`, `password`. Reset password tidak
+membuka lockout. ADMIN terakhir tidak boleh dinonaktifkan atau diturunkan perannya. Role lain
+mendapat `403`.
+
+---
+
+## 9. GET /api/customers
+
+Role: ADMIN, SALES, KASIR. Query opsional: `search` (maksimal 100 karakter), `page`, `limit`.
+Hanya pelanggan aktif yang dikembalikan.
 
 ```json
 {
   "success": true,
-  "message": "Data sesi",
+  "message": "Daftar pelanggan",
   "data": {
-    "user": {
+    "customers": [{
       "id": 1,
-      "name": "Nama Dummy",
-      "username": "dummy_user",
-      "role": "ADMIN"
-    }
+      "code": "PLG-001",
+      "name": "Pelanggan Contoh",
+      "address": "Bandung",
+      "phone": "022000000",
+      "price_level": "GROSIR",
+      "credit_limit": "2500000.00",
+      "payment_term_days": 30
+    }],
+    "pagination": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
   }
 }
 ```
 
-### Respons error
+## 10. GET /api/customers/:id/credit
 
-| Status | `message` | Penyebab |
-|---|---|---|
-| `401` | `Sesi berakhir, silakan login kembali` | Tidak ada sesi aktif |
-
-### Validasi dan business rules
-
-- Data berasal dari `req.session.user`, bukan dari query database baru.
-- Endpoint ini tidak mengembalikan `password`, hash, `failed_attempts`, atau informasi sensitif lain.
-- Dipakai frontend untuk mengecek sesi dan menampilkan identitas pengguna.
-
----
-
-## 4. PUT /api/auth/password
-
-- **Authentication:** wajib (`requireLogin`).
-- **Role:** semua role yang login.
-- **Query parameter:** tidak ada.
-- **Request body:**
-
-  ```json
-  {
-    "oldPassword": "dummy_pass_lama",
-    "newPassword": "dummy_pass_baru",
-    "confirmPassword": "dummy_pass_baru"
-  }
-  ```
-
-### Respons sukses — 200
-
-```json
-{ "success": true, "message": "Password berhasil diubah", "data": null }
-```
-
-### Respons error
-
-| Status | `message` | Penyebab |
-|---|---|---|
-| `400` | `Field wajib diisi` | Salah satu field kosong/tidak ada |
-| `400` | `Password minimal 8 karakter` | `newPassword` kurang dari 8 karakter |
-| `400` | `Password maksimal 72 byte` | `newPassword` lebih dari 72 byte UTF-8 |
-| `400` | `Password lama salah` | `oldPassword` tidak cocok dengan hash tersimpan |
-| `400` | `Konfirmasi password tidak sama` | `newPassword` ≠ `confirmPassword` |
-| `400` | `Password baru harus berbeda dari password lama` | `newPassword` sama persis dengan `oldPassword` |
-| `401` | `Sesi berakhir, silakan login kembali` | Tidak ada sesi aktif |
-| `404` | `Pengguna tidak ditemukan` | Pengguna pada sesi sudah tidak ada |
-| `500` | `Terjadi kesalahan pada server` | Error tak tertangani |
-
-Contoh error validasi:
+Role: ADMIN, SALES. Mengembalikan data kredit untuk UC-03/UC-04:
 
 ```json
 {
-  "success": false,
-  "message": "Password minimal 8 karakter",
-  "errors": [
-    { "field": "newPassword", "message": "Password minimal 8 karakter" }
+  "success": true,
+  "message": "Detail kredit pelanggan",
+  "data": {
+    "id": 1,
+    "code": "PLG-001",
+    "name": "Pelanggan Contoh",
+    "price_level": "GROSIR",
+    "credit_limit": "2500000.00",
+    "outstanding": "2000000.00",
+    "remaining_limit": "500000.00"
+  }
+}
+```
+
+`remaining_limit` dibatasi menjadi `0.00` bila negatif atau bila `credit_limit = 0`. Field
+`risk_score` dan `risk_label` **tidak ada** (FR-22 ditunda ke Sprint 3). `404`:
+`Pelanggan tidak ditemukan`; `400`: `ID pelanggan tidak valid`.
+
+## 11. GET /api/products
+
+Semua role login, termasuk GUDANG. Query opsional: `search`, `page`, `limit`. Hanya produk
+aktif. Tiap produk memuat `id`, `code`, `name`, `unit`, `price_retail`, `price_wholesale`,
+`stock`, `min_stock`. Harga berupa string desimal.
+
+## 12. GET /api/products/by-code/:code
+
+Role: ADMIN, SALES. Query opsional: `level=RETAIL|GROSIR` (default `RETAIL`),
+`qty` (default `1`), `discount` (default `0`). Semua perhitungan memakai presisi sen.
+
+```json
+{
+  "success": true,
+  "message": "Harga produk",
+  "data": {
+    "id": 5,
+    "code": "BRS-05",
+    "name": "Barang Contoh",
+    "unit": "PCS",
+    "price_level": "RETAIL",
+    "unit_price": "75000.00",
+    "qty": 2,
+    "subtotal": "150000.00",
+    "discount": "5000.00",
+    "line_total": "145000.00",
+    "stock": 30
+  }
+}
+```
+
+Error: `400` `Kode produk wajib diisi`, `Level harga tidak valid`,
+`Kuantitas harus bilangan bulat positif`, `Nominal diskon tidak valid`; `404`:
+`Produk tidak ditemukan`.
+
+---
+
+## 13. POST /api/orders
+
+Role: ADMIN, SALES. Membuat sales order **DRAFT**. Request body:
+
+```json
+{
+  "customer_id": 1,
+  "items": [
+    { "code": "BRS-05", "qty": 2, "discount": "5000.00" }
   ]
 }
 ```
 
-### Validasi dan business rules
+Field berikut **ditolak** dengan `400 Field tidak diizinkan`: `unit_price`, `price`,
+`price_level`, `subtotal`, `discount`, `total` pada header; dan `unit_price`, `price`,
+`price_level`, `subtotal`, `line_total`, `total` pada setiap item. Harga dan uang dihitung
+server dari `products` dan `customers.price_level`.
 
-- Minimal 8 karakter dan maksimal 72 byte UTF-8; hash disimpan dengan bcrypt cost 10.
-- `newPassword` harus berbeda dari `oldPassword` dan sama dengan `confirmPassword`.
-- Pembarasan password berada dalam satu transaksi (`withTransaction`) bersama `findById` dan
-  `updatePassword`.
-- **Session saat ini tetap aktif** setelah ganti password berhasil; sesi tidak dihancurkan.
-- Endpoint ini tidak menghapus lockout. Reset lockout hanya terjadi pada login berhasil.
-
----
-
-## 5. GET /api/users
-
-- **Authentication:** wajib.
-- **Role:** khusus `ADMIN` (`requireRole('ADMIN')` dipasang di router).
-- **Response shape:** `data` berisi `{ users: [...], pagination: {...} }`, bukan array langsung.
-
-### Query parameter
-
-| Nama | Wajib | Tipe | Keterangan |
-|---|---|---|---|
-| `q` atau `search` | tidak | string | Pencarian pada `name` atau `username` (`LIKE`). `q` lebih diutamakan bila keduanya ada. |
-| `role` | tidak | string | Filter peran: `ADMIN`, `SALES`, `KASIR`, `GUDANG`. Kosong = semua. |
-| `is_active` | tidak | string | Hanya `'true'` atau `'false'` yang dipakai sebagai filter; nilai lain diabaikan menjadi tanpa filter. |
-| `page` | tidak | integer | Halaman, minimal `1`; default `1` bila tidak valid. |
-| `limit` | tidak | integer | Jumlah per halaman, minimal `1`, maksimal `100`; default `10`. |
-
-Contoh: `GET /api/users?q=dummy&role=SALES&is_active=true&page=1&limit=10`.
-
-### Respons sukses — 200
+Sukses `201`: `data.order` berisi order DRAFT lengkap dengan `items` berisi barang yang tersimpan dan `payments: []`.
 
 ```json
 {
-  "success": true,
-  "message": "Daftar pengguna",
-  "data": {
-    "users": [
-      {
-        "id": 2,
-        "name": "Nama Dummy Sales",
-        "username": "dummy_sales",
-        "role": "SALES",
-        "is_active": true
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 1,
-      "totalPages": 1
+  "id": 42,
+  "order_no": "SO-20261126-001",
+  "order_date": "2026-11-26",
+  "customer_id": 1,
+  "customer_code": "PLG-001",
+  "customer_name": "Pelanggan Contoh",
+  "user_id": 2,
+  "user_name": "Sales Contoh",
+  "subtotal": "150000.00",
+  "discount": "5000.00",
+  "total": "145000.00",
+  "status": "DRAFT",
+  "payment_type": null,
+  "due_date": null,
+  "items": [
+    {
+      "id": 1,
+      "sales_order_id": 42,
+      "product_id": 5,
+      "code": "BRS-05",
+      "name": "Barang Contoh",
+      "qty": 2,
+      "unit_price": "75000.00",
+      "discount": "5000.00",
+      "line_total": "145000.00"
     }
-  }
+  ],
+  "payments": []
 }
 ```
 
-### Respons error
+Aturan penting:
 
-| Status | `message` | Penyebab |
-|---|---|---|
-| `401` | `Sesi berakhir, silakan login kembali` | Tidak ada sesi aktif |
-| `403` | `Anda tidak memiliki hak akses untuk operasi ini` | Role bukan ADMIN |
-| `500` | `Terjadi kesalahan pada server` | Error database/tak tertangani |
+- `subtotal` = bruto sebelum diskon; `discount` = total diskon semua baris;
+  `total = subtotal − discount`. Tanpa PPN.
+- Kode barang sama digabung; stok dicek terhadap jumlah gabungan.
+- Nomor order `SO-YYYYMMDD-NNN`; sequence boleh `1000`, `1001`, ...
+- Nomor dibuat dengan mutex `SELECT ... FOR UPDATE` pada baris `users`, `UNIQUE(order_no)`,
+  dan retry `ER_DUP_ENTRY` maksimal 3 kali.
+- DRAFT **tidak** mengurangi stok dan tidak membuat `payments`/`stock_movements`.
 
-### Validasi dan business rules
+Error utama: `400` `Minimal satu barang harus ditambahkan`, `ID pelanggan tidak valid`,
+`Kode barang wajib diisi`, `Jumlah tidak valid`, `Diskon tidak valid`, `Field tidak diizinkan`;
+`401` `Sesi berakhir, silakan login kembali`; `404` `Pelanggan tidak ditemukan` atau
+`Barang tidak ditemukan`; `409` `Stok tidak cukup, tersedia N`; `500`
+`Gagal membuat nomor sales order, silakan coba lagi`.
 
-- Urutan tetap `ORDER BY name ASC, id ASC`. Frontend tidak mengirim parameter `sort`.
-- Field yang dikembalikan hanya `id`, `name`, `username`, `role`, `is_active`. Tidak ada `password`.
-- Filter status memakai sentinel `NULL` agar `is_active = 0` tidak dianggap filter kosong
-  (perbandingan MySQL `0 = ''` bernilai benar dan pernah menonaktifkan filter status).
-- `limit` dibatasi maksimal 100; `offset` dihitung `(page - 1) * limit`.
-- Pencarian dan filter memakai query parameterized, bukan konkatenasi string.
+## 14. GET /api/orders
 
----
+Role: ADMIN, SALES, KASIR. Sales hanya melihat order miliknya; Admin dan Kasir melihat semua.
 
-## 6. GET /api/users/:id
+Query opsional:
 
-- **Authentication:** wajib.
-- **Role:** khusus `ADMIN`.
-- **Path parameter:** `id` — integer positif (validator `isInt({ min: 1 })`).
-- **Query parameter:** tidak ada.
-- **Request body:** tidak ada.
+| Nama | Keterangan |
+|---|---|
+| `q` | Cari nomor order atau nama pelanggan (maksimal 100 karakter) |
+| `status` | `DRAFT`, `LUNAS`, `PIUTANG`, atau `BATAL` |
+| `date_from`, `date_to` | Format `YYYY-MM-DD`; `date_to` tidak boleh sebelum `date_from` |
+| `page`, `limit` | Default `1`/`10`; `limit` maksimal `100` |
 
-Contoh: `GET /api/users/2`.
+Respons: `data.orders` dan `data.pagination`. Setiap order memuat field header yang sama
+seperti endpoint 13, ditambah `items` dan `payments`. Tidak ada field `password`/hash.
 
-### Respons sukses — 200
+Error `400`: `Status tidak valid`, `Tanggal awal tidak valid`, `Tanggal akhir tidak valid`,
+`Tanggal akhir tidak boleh sebelum tanggal awal`, `Halaman tidak valid`,
+`Limit maksimal 100`, `ID sales order tidak valid`.
+
+## 15. GET /api/orders/:id
+
+Role: ADMIN, SALES, KASIR. `data.order` berisi header, `items`, dan `payments`. Order milik
+Sales lain menjadi `404` `Order tidak ditemukan` bukan `403`, agar tidak membocorkan keberadaan
+order. ID bukan integer positif → `400 ID sales order tidak valid`.
+
+## 16. POST /api/orders/:id/payments
+
+Role: **KASIR only**. Request body:
 
 ```json
 {
-  "success": true,
-  "message": "Detail pengguna",
-  "data": {
-    "user": {
-      "id": 2,
-      "name": "Nama Dummy Sales",
-      "username": "dummy_sales",
-      "role": "SALES",
-      "is_active": true
-    }
-  }
+  "payment_type": "TUNAI",
+  "method": "TUNAI",
+  "nominal": "800000.00",
+  "note": "opsional"
 }
 ```
 
-### Respons error
+- `payment_type`: `TUNAI` atau `KREDIT`. Ini berbeda dengan `method` pada tabel `payments`.
+- `method`: `TUNAI` atau `TRANSFER`.
+- `nominal`: nominal uang yang diterima; boleh `0` hanya untuk `KREDIT`.
+- `amount` pada `payments` menyimpan nominal diterima, `change_amount` menyimpan kembalian.
+  Nilai terpakai = `amount − change_amount`.
 
-| Status | `message` | Penyebab |
+Sukses `200`: `data = { order, payment }`. Status akhir selalu `LUNAS` atau `PIUTANG`.
+Kredit tanpa uang muka menghasilkan `PIUTANG` dan **tidak** membuat baris `payments`.
+
+Satu transaksi mencakup: lock order → lock customer → cek limit piutang → lock produk → cek
+stok → `UPDATE products SET stock = stock - ? ... AND stock >= ?` → `stock_movements`
+`KELUAR` sekali per order → insert payment bila nominal > 0 → update status order. Rollback
+penuh bila salah satu gagal; order tetap DRAFT.
+
+Pesan error persis:
+
+| Status | `message` | Kondisi |
 |---|---|---|
-| `400` | `ID pengguna tidak valid` | `id` bukan integer positif |
-| `400` | `ID pengguna tidak valid` | `id` gagal parsing di service |
-| `401` | `Sesi berakhir, silakan login kembali` | Tidak ada sesi aktif |
-| `403` | `Anda tidak memiliki hak akses untuk operasi ini` | Role bukan ADMIN |
-| `404` | `Pengguna tidak ditemukan` | Tidak ada baris dengan `id` tersebut |
-| `500` | `Terjadi kesalahan pada server` | Error tak tertangani |
+| `400` | `Nominal tidak valid` | Nominal negatif/rusak atau TUNAI dengan nominal 0 |
+| `400` | `Transfer tidak boleh melebihi total` | `method = TRANSFER` dan nominal > total |
+| `400` | `Nominal kurang Rp{selisih}` | TUNAI dengan nominal < total |
+| `409` | `Melebihi limit kredit` | Kredit sebagian melebihi sisa limit atau limit = 0 |
+| `409` | `Stok tidak cukup, tersedia {n}` | Stok berubah saat pembayaran |
+| `409` | `Order sudah diproses` | Order bukan DRAFT atau guard update gagal |
+| `404` | `Order tidak ditemukan` | ID tidak ada |
 
-Contoh error validasi:
+Contoh kanonik: tagihan `Rp750000.00`, nominal diterima `Rp800000.00` → `LUNAS`,
+`change_amount = "50000.00"`. Kredit penuh (`nominal >= total`) → `LUNAS`, `due_date = NULL`;
+kredit sebagian → `PIUTANG`, `due_date` dihitung dari `payment_term_days`.
 
-```json
-{
-  "success": false,
-  "message": "ID pengguna tidak valid",
-  "errors": [{ "field": "id", "message": "ID pengguna tidak valid" }]
-}
-```
+## 17. GET /api/orders/:id/invoice.pdf
 
-### Validasi dan business rules
+Role: ADMIN, KASIR. Query opsional `format=a4|80mm` (default `a4`).
 
-- `id` divalidasi dua kali: di route (`param`) dan di service (`parseId`).
-- Respons hanya memuat field publik; password/hash tidak pernah dikirim.
+Respons **bukan JSON**: `200`, `Content-Type: application/pdf`,
+`Content-Disposition: inline; filename="invoice-SO-YYYYMMDD-NNN.pdf"`, `Cache-Control: no-store`.
+Body adalah Buffer PDF yang dapat dibuka/dicetak di browser.
+
+Invoice memuat kop DistriFlow, nomor order, tanggal, pelanggan, sales, status, rincian barang,
+subtotal, diskon, total tagihan, nominal bayar, kembalian atau sisa piutang, dan jatuh tempo
+untuk kredit. Tidak ada PPN. Alamat dan telepon distributor tidak tersedia sebagai data kanonik,
+jadi PDF menampilkan `tidak tercatat pada data transaksi` daripada mengarang data.
+
+Error: `400 Format invoice tidak valid`, `404 Order tidak ditemukan`, `409`
+`Invoice hanya tersedia untuk order LUNAS atau PIUTANG`. Endpoint ini hanya membaca data;
+tidak mengubah status, stok, atau pembayaran.
 
 ---
 
-## 7. POST /api/users
+## Catatan implementasi Sprint 2
 
-- **Authentication:** wajib.
-- **Role:** khusus `ADMIN`.
-- **Query parameter:** tidak ada.
-- **Request body:**
-
-  ```json
-  {
-    "name": "Nama Dummy Baru",
-    "username": "dummy_baru",
-    "password": "dummy_pass_123",
-    "role": "GUDANG"
-  }
-  ```
-
-### Respons sukses — 201
-
-```json
-{
-  "success": true,
-  "message": "Pengguna berhasil ditambahkan",
-  "data": {
-    "user": {
-      "id": 9,
-      "name": "Nama Dummy Baru",
-      "username": "dummy_baru",
-      "role": "GUDANG",
-      "is_active": true
-    }
-  }
-}
-```
-
-### Respons error
-
-| Status | `message` | Penyebab |
-|---|---|---|
-| `400` | `Field wajib diisi` | `name`, `username`, `password`, atau `role` kosong |
-| `400` | `Nama maksimal 100 karakter` | `name` lebih dari 100 karakter |
-| `400` | `Username tidak boleh mengandung spasi` | `username` mengandung spasi |
-| `400` | `Password minimal 8 karakter` | `password` kurang dari 8 karakter |
-| `400` | `Password maksimal 72 byte` | `password` lebih dari 72 byte UTF-8 |
-| `400` | `Role tidak valid` | `role` bukan salah satu dari empat peran |
-| `401` | `Sesi berakhir, silakan login kembali` | Tidak ada sesi aktif |
-| `403` | `Anda tidak memiliki hak akses untuk operasi ini` | Role bukan ADMIN |
-| `409` | `Username sudah terdaftar` | Username duplikat (termasuk dari `ER_DUP_ENTRY`) |
-| `500` | `Terjadi kesalahan pada server` | Error tak tertangani |
-
-### Validasi dan business rules
-
-- Role yang diizinkan persis: `ADMIN`, `SALES`, `KASIR`, `GUDANG`.
-- Username tidak boleh mengandung spasi dan harus unik; duplikat menghasilkan `409`.
-- Password minimal 8 karakter, maksimal 72 byte UTF-8, di-hash dengan bcrypt cost 10.
-- **Pengguna baru selalu aktif** (`is_active = TRUE`) terlepas dari input; field status tidak dikirim
-  pada mode Tambah UI-05.
-- Kolom `failed_attempts` dan `locked_until` tidak disentuh saat pembuatan.
-- Penyisipan memakai parameter `?`, bukan konkatenasi nilai pengguna.
-
----
-
-## 8. PUT /api/users/:id
-
-- **Authentication:** wajib.
-- **Role:** khusus `ADMIN`.
-- **Path parameter:** `id` — integer positif.
-- **Query parameter:** tidak ada.
-- **Request body (semua opsional, tetapi minimal satu field boleh diubah):**
-
-  ```json
-  {
-    "name": "Nama Dummy Diubah",
-    "role": "SALES",
-    "is_active": false,
-    "password": "dummy_pass_baru"
-  }
-  ```
-
-  Field yang diizinkan: `name?`, `role?`, `is_active?`, `password?`.
-  **`username` dilarang** dan akan ditolak.
-
-### Respons sukses — 200
-
-```json
-{
-  "success": true,
-  "message": "Pengguna berhasil diperbarui",
-  "data": {
-    "user": {
-      "id": 2,
-      "name": "Nama Dummy Diubah",
-      "username": "dummy_sales",
-      "role": "SALES",
-      "is_active": false
-    }
-  }
-}
-```
-
-### Respons error
-
-| Status | `message` | Penyebab |
-|---|---|---|
-| `400` | `ID pengguna tidak valid` | `id` bukan integer positif |
-| `400` | `Username tidak dapat diubah` | Body memuat field `username` |
-| `400` | `Field wajib diisi` | `name` dikirim kosong |
-| `400` | `Nama maksimal 100 karakter` | `name` lebih dari 100 karakter |
-| `400` | `Role tidak valid` | `role` bukan salah satu dari empat peran |
-| `400` | `Status harus boolean` | `is_active` bukan boolean/0/1/'0'/'1'/'true'/'false' |
-| `400` | `Password minimal 8 karakter` | `password` dikirim dan kurang dari 8 karakter |
-| `400` | `Password maksimal 72 byte` | `password` dikirim dan lebih dari 72 byte UTF-8 |
-| `400` | `Tidak ada field yang dapat diperbarui` | Tidak ada field yang diizinkan dikirim |
-| `401` | `Sesi berakhir, silakan login kembali` | Tidak ada sesi aktif |
-| `403` | `Anda tidak memiliki hak akses untuk operasi ini` | Role bukan ADMIN |
-| `404` | `Pengguna tidak ditemukan` | `id` tidak ditemukan |
-| `409` | `Minimal harus ada satu Admin aktif` | Update mengurangi jumlah Admin aktif terakhir |
-| `500` | `Terjadi kesalahan pada server` | Error tak tertangani |
-
-Contoh error konflik:
-
-```json
-{ "success": false, "message": "Minimal harus ada satu Admin aktif" }
-```
-
-### Validasi dan business rules
-
-- `username` bersifat immutable; **tidak boleh dikirim** pada endpoint ini.
-- `is_active` menerima boolean atau representasi `0`, `1`, `"0"`, `"1"`, `"true"`, `"false"`;
-  diubah menjadi boolean di service. Filter `?is_active=false` pada `GET /api/users` memakai aturan
-  yang sama.
-- Minimal harus ada satu Admin aktif. Penurunan peran Admin atau penonaktifan Admin terakhir
-  ditolak dengan `409`. Locking baris (`FOR UPDATE`, urutan `id ASC`) mencegah dua transaksi
-  bersamaan mengurangi jumlah Admin aktif.
-- Admin boleh menonaktifkan dirinya sendiri selama masih ada Admin aktif lain.
-- Seluruh pembaruan berada dalam satu transaksi: lock Admin aktif → lock baris target → validasi
-  last-admin → `UPDATE users` → hapus sesi bila perlu → baca data publik.
-- **Menonaktifkan pengguna menghapus sesi pengguna target.** Reset password (field `password`)
-  juga menghapus sesi target, tetapi **tidak membuka lockout** yang sedang berjalan.
-- `password` bila dikirim di-hash bcrypt cost 10 dan tidak pernah dikembalikan dalam respons.
-- Tidak ada endpoint penghapusan permanen pengguna pada Sprint 1.
-
----
-
-## Endpoint yang belum tersedia
-
-Endpoint berikut **tidak ada** pada Sprint 1 dan tidak boleh didokumentasikan sebagai tersedia:
-manajemen pelanggan, produk, sales order, pembayaran, stok, piutang, dashboard KPI, dan seluruh
-use case UC-01…UC-07. Rencana Sprint 2 dan Sprint 3 tercatat di `docs/ASSUMPTIONS.md`, bukan di API ini.
-
-Untuk endpoint di luar delapan endpoint di atas, router mengembalikan `404` dengan pesan
-`Endpoint tidak ditemukan` (format `{ "success": false, "message": "..." }`).
+- Halaman yang diizinkan Page Guard: `/pages/sales-order.html` (ADMIN, SALES),
+  `/pages/orders.html` dan `/pages/order-detail.html` (ADMIN, SALES, KASIR),
+  `/pages/payment.html` (KASIR). Guest diredirect ke login, role lain ke dashboard,
+  HTML di luar allowlist tetap `404`.
+- Sidebar frontend mengikuti `PAGE_ACCESS`; tidak ada menu KPI (Sprint 3).
+- Semua data API dirender dengan `textContent`. Tombol "Cetak Invoice" membuka URL kanonik
+  `/api/orders/:id/invoice.pdf?format=...` di tab baru melalui `window.DistriFlowAPI.openInvoice`.
+  Fetch/XHR tidak dipakai untuk PDF karena PDF viewer bawaan Chrome mengganti respons
+  `application/pdf` menjadi HTTP 204 kosong pada pengujian headless; navigasi tab memakai session
+  cookie yang sama dan tetap melalui role guard backend. Tidak ada endpoint tambahan.
+- Tidak ada endpoint pembatalan order dan tidak ada field risiko kredit pada Sprint 2.

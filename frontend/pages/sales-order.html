@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Buat sales order baru DistriFlow">
+  <title>Sales Order Baru — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/sales-order.js" defer></script>
+</head>
+<body>
+  <div class="df-app">
+    <aside class="df-sidebar" aria-label="Menu utama"></aside>
+
+    <div class="df-main">
+      <header class="df-topbar">
+        <h1 class="df-topbar__title">Sales Order Baru</h1>
+
+        <div class="df-topbar__actions">
+          <div class="df-user-chip">
+            <div id="user-avatar" class="df-user-chip__avatar" aria-hidden="true">?</div>
+            <div>
+              <div id="user-name" class="df-user-chip__name">Memuat…</div>
+              <div id="user-role" class="df-user-chip__role">Memuat…</div>
+            </div>
+          </div>
+          <button id="logout-button" class="df-btn df-btn--secondary" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <main class="df-content">
+        <div class="df-breadcrumb">Penjualan / Sales Order Baru</div>
+
+        <div class="df-page-header">
+          <div>
+            <h2>Buat Sales Order</h2>
+            <p>Pilih pelanggan, tambahkan barang, lalu simpan order dalam status DRAFT.</p>
+          </div>
+          <a class="df-btn df-btn--secondary" href="/pages/orders.html">Lihat Daftar Order</a>
+        </div>
+
+        <div id="so-alert" class="df-alert" role="alert" hidden></div>
+
+        <form id="sales-order-form" novalidate>
+          <section class="df-card" aria-labelledby="customer-card-title">
+            <h3 id="customer-card-title" class="df-card__title">Pelanggan</h3>
+            <p class="df-card__subtitle">Cari pelanggan untuk menetapkan level harga, limit, dan sisa limit.</p>
+
+            <div class="df-field">
+              <label class="df-label" for="customer-search">Cari Pelanggan</label>
+              <input id="customer-search" class="df-input df-user-search" type="search"
+                     placeholder="Cari kode atau nama pelanggan..." autocomplete="off">
+              <span id="customer-status" class="df-help">Memuat daftar pelanggan…</span>
+            </div>
+
+            <div class="df-field">
+              <label class="df-label" for="customer-select">Pilih Pelanggan <span class="df-required" aria-hidden="true">*</span></label>
+              <select id="customer-select" class="df-select" disabled>
+                <option value="">Pilih Pelanggan</option>
+              </select>
+            </div>
+
+            <div class="df-grid df-grid--2">
+              <div class="df-readonly-note">
+                Kode <span id="credit-code">-</span> · Level harga <span id="credit-level">-</span>
+              </div>
+              <div class="df-readonly-note">
+                Limit <span id="credit-limit">-</span> · Sisa limit <span id="credit-remaining">-</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="df-card" aria-labelledby="items-card-title">
+            <h3 id="items-card-title" class="df-card__title">Barang</h3>
+            <p class="df-card__subtitle">Ketik kode barang lalu tekan Enter. Kode yang sama akan digabung.</p>
+
+            <div class="df-form-grid">
+              <div class="df-field">
+                <label class="df-label" for="product-search">Cari Barang (opsional)</label>
+                <input id="product-search" class="df-input" type="search" list="product-options"
+                       placeholder="Cari kode atau nama barang..." autocomplete="off">
+                <datalist id="product-options"></datalist>
+                <span id="product-status" class="df-help">Cari barang untuk memilih kode dengan cepat.</span>
+              </div>
+
+              <div class="df-field">
+                <label class="df-label" for="product-code">Kode Barang <span class="df-required" aria-hidden="true">*</span></label>
+                <input id="product-code" class="df-input" type="text" maxlength="20"
+                       placeholder="Tekan Enter untuk menambah" autocomplete="off" autofocus>
+              </div>
+
+              <div class="df-field">
+                <label class="df-label" for="item-qty">Qty <span class="df-required" aria-hidden="true">*</span></label>
+                <input id="item-qty" class="df-input" type="number" min="1" step="1" value="1">
+              </div>
+
+              <div class="df-field">
+                <label class="df-label" for="item-discount">Diskon per Barang (Rp)</label>
+                <input id="item-discount" class="df-input" type="text" inputmode="decimal" value="0"
+                       placeholder="0" autocomplete="off">
+              </div>
+            </div>
+
+            <div class="df-toolbar">
+              <button id="add-item" class="df-btn df-btn--secondary" type="button" disabled>+ Tambah Barang</button>
+              <span id="item-status" class="df-help">Pilih pelanggan terlebih dahulu untuk melihat harga.</span>
+            </div>
+
+            <div class="df-table-wrap">
+              <table class="df-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Kode</th>
+                    <th scope="col">Nama</th>
+                    <th scope="col" class="df-right">Harga</th>
+                    <th scope="col" class="df-right">Qty</th>
+                    <th scope="col" class="df-right">Diskon</th>
+                    <th scope="col" class="df-right">Subtotal</th>
+                    <th scope="col" class="df-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+              </table>
+            </div>
+
+            <div class="df-grid df-grid--kpi">
+              <div class="df-kpi">
+                <span class="df-kpi__label">Subtotal</span>
+                <div id="order-subtotal" class="df-kpi__value">Rp0</div>
+              </div>
+              <div class="df-kpi">
+                <span class="df-kpi__label">Diskon</span>
+                <div id="order-discount" class="df-kpi__value">Rp0</div>
+              </div>
+              <div class="df-kpi df-kpi--success">
+                <span class="df-kpi__label">Total Order</span>
+                <div id="order-total" class="df-kpi__value">Rp0</div>
+              </div>
+            </div>
+
+            <div class="df-form-actions">
+              <button id="cancel-button" class="df-btn df-btn--secondary" type="button">Batal</button>
+              <button id="save-button" class="df-btn df-btn--primary" type="submit" disabled>Simpan Order</button>
+            </div>
+          </section>
+        </form>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

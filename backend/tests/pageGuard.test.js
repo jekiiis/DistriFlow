@@ -36,13 +36,17 @@ function runGuard(overrides = {}, user = null) {
 }
 
 describe('allowlist halaman', () => {
-  test('berisi tepat lima halaman Sprint 1 dengan aturannya', () => {
+  test('berisi sembilan halaman dengan aturan Sprint 1 dan Sprint 2', () => {
     expect(PAGE_ACCESS).toEqual({
       '/pages/login.html': 'PUBLIC',
       '/pages/dashboard.html': 'AUTHENTICATED',
       '/pages/change-password.html': 'AUTHENTICATED',
       '/pages/users.html': 'ADMIN',
-      '/pages/user-form.html': 'ADMIN'
+      '/pages/user-form.html': 'ADMIN',
+      '/pages/sales-order.html': ['SALES', 'ADMIN'],
+      '/pages/orders.html': ['ADMIN', 'SALES', 'KASIR'],
+      '/pages/order-detail.html': ['ADMIN', 'SALES', 'KASIR'],
+      '/pages/payment.html': 'KASIR'
     });
   });
 });
@@ -137,6 +141,51 @@ describe('halaman terlindungi', () => {
       { root: '/fake/pages' },
       expect.any(Function)
     );
+  });
+});
+
+describe('halaman Sprint 2', () => {
+  test.each([
+    ['/pages/sales-order.html', 'SALES'],
+    ['/pages/sales-order.html', 'ADMIN'],
+    ['/pages/orders.html', 'ADMIN'],
+    ['/pages/orders.html', 'SALES'],
+    ['/pages/orders.html', 'KASIR'],
+    ['/pages/order-detail.html', 'ADMIN'],
+    ['/pages/order-detail.html', 'SALES'],
+    ['/pages/order-detail.html', 'KASIR'],
+    ['/pages/payment.html', 'KASIR']
+  ])('%s dapat disajikan untuk %s', (pagePath, role) => {
+    const { res } = runGuard({ path: pagePath }, { id: 10, role });
+    expect(res.sendFile).toHaveBeenCalledWith(
+      pagePath.replace('/pages/', ''),
+      { root: '/fake/pages' },
+      expect.any(Function)
+    );
+    expect(res.redirect).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['/pages/sales-order.html', 'KASIR'],
+    ['/pages/sales-order.html', 'GUDANG'],
+    ['/pages/orders.html', 'GUDANG'],
+    ['/pages/order-detail.html', 'GUDANG'],
+    ['/pages/payment.html', 'ADMIN'],
+    ['/pages/payment.html', 'SALES']
+  ])('%s untuk %s diarahkan ke dashboard', (pagePath, role) => {
+    const { res } = runGuard({ path: pagePath }, { id: 11, role });
+    expect(res.redirect).toHaveBeenCalledWith(302, DASHBOARD_PAGE);
+    expect(res.sendFile).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    '/pages/sales-order.html',
+    '/pages/orders.html',
+    '/pages/order-detail.html',
+    '/pages/payment.html'
+  ])('%s tanpa sesi diarahkan ke login', (pagePath) => {
+    const { res } = runGuard({ path: pagePath });
+    expect(res.redirect).toHaveBeenCalledWith(302, LOGIN_PAGE);
   });
 });
 

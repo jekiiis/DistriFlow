@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Daftar sales order DistriFlow">
+  <title>Daftar Sales Order — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/orders.js" defer></script>
+</head>
+<body>
+  <div class="df-app">
+    <aside class="df-sidebar" aria-label="Menu utama"></aside>
+
+    <div class="df-main">
+      <header class="df-topbar">
+        <h1 class="df-topbar__title">Daftar Sales Order</h1>
+
+        <div class="df-topbar__actions">
+          <div class="df-user-chip">
+            <div id="user-avatar" class="df-user-chip__avatar" aria-hidden="true">?</div>
+            <div>
+              <div id="user-name" class="df-user-chip__name">Memuat…</div>
+              <div id="user-role" class="df-user-chip__role">Memuat…</div>
+            </div>
+          </div>
+          <button id="logout-button" class="df-btn df-btn--secondary" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <main class="df-content">
+        <div class="df-breadcrumb">Penjualan / Daftar Sales Order</div>
+
+        <div class="df-page-header">
+          <div>
+            <h2>Sales Order</h2>
+            <p>Lihat, cari, dan buka detail sales order sesuai hak akses Anda.</p>
+          </div>
+          <a id="add-order" class="df-btn df-btn--primary df-hidden" href="/pages/sales-order.html">+ Sales Order Baru</a>
+        </div>
+
+        <div id="orders-alert" class="df-alert" role="alert" hidden></div>
+
+        <section class="df-card" aria-labelledby="order-table-title">
+          <h3 id="order-table-title" class="df-card__title">Data Sales Order</h3>
+          <p id="order-count" class="df-card__subtitle">Memuat daftar sales order…</p>
+
+          <form id="order-filters" class="df-toolbar" novalidate>
+            <input id="order-search" class="df-input df-user-search" type="search"
+                   placeholder="Cari no. order atau pelanggan..." aria-label="Cari sales order">
+
+            <input id="date-from" class="df-input" type="date" aria-label="Tanggal awal">
+
+            <input id="date-to" class="df-input" type="date" aria-label="Tanggal akhir">
+
+            <select id="status-filter" class="df-select" aria-label="Filter status">
+              <option value="">Semua Status</option>
+              <option value="DRAFT">DRAFT</option>
+              <option value="LUNAS">LUNAS</option>
+              <option value="PIUTANG">PIUTANG</option>
+              <option value="BATAL">BATAL</option>
+            </select>
+
+            <button id="filter-reset" class="df-btn df-btn--secondary" type="button">Reset</button>
+          </form>
+
+          <div class="df-table-wrap">
+            <table class="df-table">
+              <thead>
+                <tr>
+                  <th scope="col">No. Order</th>
+                  <th scope="col">Tanggal</th>
+                  <th scope="col">Pelanggan</th>
+                  <th scope="col">Sales</th>
+                  <th scope="col" class="df-right">Total</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="df-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="orders-body"></tbody>
+            </table>
+          </div>
+
+          <div class="df-pagination">
+            <span id="pagination-info" class="df-pagination__info"></span>
+            <button id="prev-page" class="df-btn df-btn--secondary df-btn--sm" type="button">Sebelumnya</button>
+            <span id="page-label" class="df-kbd">1</span>
+            <button id="next-page" class="df-btn df-btn--secondary df-btn--sm" type="button">Berikutnya</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

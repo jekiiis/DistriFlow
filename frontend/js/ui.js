@@ -6,19 +6,32 @@
  * bukan innerHTML, sesuai NFR-02 (pencegahan XSS).
  */
 (function exposeUi() {
-  // Sprint 1: hanya Dashboard, Ganti Password, dan Manajemen Pengguna (ADMIN).
   // Path absolut dipakai karena halaman berada di /pages/, bukan di root.
   const COMMON_MENU = [
     ['dashboard', 'Dashboard', '/pages/dashboard.html', '⌂'],
     ['change-password', 'Ganti Password', '/pages/change-password.html', '⚿']
   ];
 
+  const SALES_MENU = [
+    ['sales-order', 'Sales Order Baru', '/pages/sales-order.html', '✎'],
+    ['orders', 'Daftar Sales Order', '/pages/orders.html', '≡']
+  ];
+
+  const KASIR_MENU = [
+    ['orders', 'Daftar Sales Order', '/pages/orders.html', '≡'],
+    ['payment', 'Pembayaran', '/pages/payment.html', '₹']
+  ];
+
+  // Menu mengikuti PAGE_ACCESS di backend. Detail order dibuka dari daftar,
+  // sehingga tidak ditaruh sebagai tautan langsung tanpa ID order.
   const MENU_BY_ROLE = {
     ADMIN: COMMON_MENU.concat([
-      ['users', 'Manajemen Pengguna', '/pages/users.html', '⚙']
+      ['users', 'Manajemen Pengguna', '/pages/users.html', '⚙'],
+      ['sales-order', 'Sales Order Baru', '/pages/sales-order.html', '✎'],
+      ['orders', 'Daftar Sales Order', '/pages/orders.html', '≡']
     ]),
-    SALES: COMMON_MENU.slice(),
-    KASIR: COMMON_MENU.slice(),
+    SALES: COMMON_MENU.concat(SALES_MENU),
+    KASIR: COMMON_MENU.concat(KASIR_MENU),
     GUDANG: COMMON_MENU.slice()
   };
 

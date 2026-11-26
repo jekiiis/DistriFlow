@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Detail sales order DistriFlow">
+  <title>Detail Sales Order — DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/api.js" defer></script>
+  <script src="../js/ui.js" defer></script>
+  <script src="../js/order-detail.js" defer></script>
+</head>
+<body>
+  <div class="df-app">
+    <aside class="df-sidebar" aria-label="Menu utama"></aside>
+
+    <div class="df-main">
+      <header class="df-topbar">
+        <h1 class="df-topbar__title">Detail Sales Order</h1>
+
+        <div class="df-topbar__actions">
+          <div class="df-user-chip">
+            <div id="user-avatar" class="df-user-chip__avatar" aria-hidden="true">?</div>
+            <div>
+              <div id="user-name" class="df-user-chip__name">Memuat…</div>
+              <div id="user-role" class="df-user-chip__role">Memuat…</div>
+            </div>
+          </div>
+          <button id="logout-button" class="df-btn df-btn--secondary" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <main class="df-content">
+        <div class="df-breadcrumb">Penjualan / Daftar Sales Order / Detail Order</div>
+
+        <div class="df-page-header">
+          <div>
+            <h2 id="detail-title">Detail Order</h2>
+            <p id="detail-subtitle">Memuat detail sales order…</p>
+          </div>
+          <a class="df-btn df-btn--secondary" href="/pages/orders.html">← Kembali ke Daftar Order</a>
+        </div>
+
+        <div id="detail-alert" class="df-alert" role="alert" hidden></div>
+
+        <section class="df-card" aria-labelledby="info-title">
+          <h3 id="info-title" class="df-card__title">Informasi Order</h3>
+
+          <div class="df-grid df-grid--2">
+            <div class="df-readonly-note">No. Order <strong id="detail-order-no">-</strong></div>
+            <div class="df-readonly-note">Tanggal <strong id="detail-date">-</strong></div>
+            <div class="df-readonly-note">Pelanggan <strong id="detail-customer">-</strong></div>
+            <div class="df-readonly-note">Sales <strong id="detail-sales">-</strong></div>
+            <div class="df-readonly-note">Status <span id="detail-status" class="df-badge">-</span></div>
+            <div class="df-readonly-note">Jenis Bayar <strong id="detail-payment-type">-</strong></div>
+            <div class="df-readonly-note">Jatuh Tempo <strong id="detail-due-date">-</strong></div>
+            <div class="df-readonly-note">Subtotal <strong id="detail-subtotal">Rp0</strong></div>
+            <div class="df-readonly-note">Diskon <strong id="detail-discount">Rp0</strong></div>
+            <div class="df-readonly-note">Total <strong id="detail-total">Rp0</strong></div>
+          </div>
+        </section>
+
+        <section class="df-card" aria-labelledby="items-title">
+          <h3 id="items-title" class="df-card__title">Rincian Barang</h3>
+
+          <div class="df-table-wrap">
+            <table class="df-table">
+              <thead>
+                <tr>
+                  <th scope="col">Kode</th>
+                  <th scope="col">Nama</th>
+                  <th scope="col" class="df-right">Harga</th>
+                  <th scope="col" class="df-right">Qty</th>
+                  <th scope="col" class="df-right">Diskon</th>
+                  <th scope="col" class="df-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody id="detail-items-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="df-card" aria-labelledby="payments-title">
+          <h3 id="payments-title" class="df-card__title">Pembayaran</h3>
+          <p id="payment-summary" class="df-card__subtitle">Belum ada pembayaran.</p>
+
+          <div class="df-table-wrap">
+            <table class="df-table">
+              <thead>
+                <tr>
+                  <th scope="col">Waktu</th>
+                  <th scope="col">Metode</th>
+                  <th scope="col" class="df-right">Nominal Diterima</th>
+                  <th scope="col" class="df-right">Kembalian</th>
+                  <th scope="col" class="df-right">Terpakai</th>
+                  <th scope="col">Catatan</th>
+                </tr>
+              </thead>
+              <tbody id="detail-payments-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="detail-actions" class="df-card df-hidden" aria-labelledby="actions-title">
+          <h3 id="actions-title" class="df-card__title">Aksi</h3>
+
+          <div class="df-toolbar">
+            <a id="pay-link" class="df-btn df-btn--primary df-hidden" href="#">Bayar</a>
+
+            <div id="invoice-controls" class="df-toolbar df-hidden">
+              <select id="invoice-format" class="df-select" aria-label="Format invoice">
+                <option value="a4">A4</option>
+                <option value="80mm">80 mm</option>
+              </select>
+              <button id="print-invoice" class="df-btn df-btn--secondary" type="button">Cetak Invoice</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

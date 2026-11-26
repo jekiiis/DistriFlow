@@ -153,6 +153,35 @@ describe('routing halaman', () => {
     expect(response.headers.location).toBe('/pages/dashboard.html');
   });
 
+  test.each([
+    ['/pages/sales-order.html', 'SALES'],
+    ['/pages/sales-order.html', 'ADMIN'],
+    ['/pages/orders.html', 'ADMIN'],
+    ['/pages/orders.html', 'SALES'],
+    ['/pages/orders.html', 'KASIR'],
+    ['/pages/order-detail.html', 'ADMIN'],
+    ['/pages/order-detail.html', 'SALES'],
+    ['/pages/order-detail.html', 'KASIR'],
+    ['/pages/payment.html', 'KASIR']
+  ])('halaman Sprint 2 %s untuk %s dapat diakses', async (pathname, role) => {
+    const response = await getAs(role, pathname);
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('<title>' + path.basename(pathname) + '</title>');
+  });
+
+  test.each([
+    ['/pages/sales-order.html', 'KASIR'],
+    ['/pages/orders.html', 'GUDANG'],
+    ['/pages/payment.html', 'SALES'],
+    ['/pages/payment.html', null]
+  ])('halaman Sprint 2 %s untuk %s ditolak', async (pathname, role) => {
+    const response = await getAs(role, pathname);
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe(
+      role ? '/pages/dashboard.html' : '/pages/login.html'
+    );
+  });
+
   test('14a. path alternatif tidak membypass guard (tanpa sesi)', async () => {
     const response = await getAs(null, '/pages/..%2Fpages%2Fusers.html');
     expect(response.status).toBe(302);
