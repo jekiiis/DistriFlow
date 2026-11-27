@@ -1,15 +1,17 @@
-# DistriFlow — Dokumentasi API (Sprint 1 + Sprint 2)
+# DistriFlow — Dokumentasi API (Sprint 1 + Sprint 2 + Sprint 3)
 
-Dokumen ini mencatat endpoint yang **benar-benar tersedia** setelah Sprint 2. Sumber kebenaran:
+Dokumen ini mencatat endpoint yang **benar-benar tersedia** setelah Sprint 3. Sumber kebenaran:
 `backend/src/routes/`, `controllers/`, `services/`, `middleware/validators/`, dan `models/`.
 
-> Jumlah endpoint aktual adalah **17**: 8 endpoint Sprint 1, 4 endpoint katalog Sprint 2,
-> 3 endpoint order, 1 endpoint pembayaran, dan 1 endpoint invoice. Planning Sprint 2
-> memperkirakan 18 endpoint; tidak ada endpoint kanonik ke-18 yang diimplementasikan, jadi
-> daftar ini sengaja tidak ditambahi endpoint rekaan.
+> Jumlah endpoint aktual adalah **36**: 17 endpoint Sprint 1/Sprint 2 dan 19 endpoint Sprint 3.
+> Daftar ini tidak memuat endpoint rekaan. Endpoint yang masuk backlog v1.0 (PO/supplier,
+> XLSX, kategori/rak, valuasi, DSI, WhatsApp/SMS, auto-lock, Faktur Hold 50%) sengaja
+> tidak didokumentasikan sebagai endpoint aktif.
 
-FR-09 (pembatalan order) dan FR-22 (`risk_score`/`risk_label`) ditunda ke Sprint 3. Tidak ada
-endpoint cancel order dan tidak ada field risiko pada respons API.
+FR-09 (pembatalan order), FR-17/FR-18 (piutang & bukti pembayaran), FR-19 (laporan/PDF),
+FR-20/FR-21 (KPI & restock), dan FR-22 (risiko kredit biner) sudah tersedia di Sprint 3.
+Endpoint lama `/api/customers/:id/credit` tetap tidak mengembalikan `risk_score`/`risk_label`;
+label risiko kini tersedia pada endpoint `/api/receivables`.
 
 ## Konvensi umum
 
@@ -48,6 +50,25 @@ Kode status: `400` validasi, `401` sesi/credential, `403` peran, `404` tidak dit
 | 15 | `GET` | `/api/orders/:id` | Ya | ADMIN, SALES, KASIR |
 | 16 | `POST` | `/api/orders/:id/payments` | Ya | KASIR |
 | 17 | `GET` | `/api/orders/:id/invoice.pdf` | Ya | ADMIN, KASIR |
+| 18 | `POST` | `/api/orders/:id/cancel` | Ya | ADMIN |
+| 19 | `GET` | `/api/customers/:id` | Ya | ADMIN |
+| 20 | `POST` | `/api/customers` | Ya | ADMIN |
+| 21 | `PUT` | `/api/customers/:id` | Ya | ADMIN |
+| 22 | `PATCH` | `/api/customers/:id` | Ya | ADMIN |
+| 23 | `GET` | `/api/products/restock` | Ya | ADMIN, GUDANG |
+| 24 | `GET` | `/api/products/:id` | Ya | ADMIN, GUDANG |
+| 25 | `POST` | `/api/products` | Ya | ADMIN |
+| 26 | `PUT` | `/api/products/:id` | Ya | ADMIN |
+| 27 | `PATCH` | `/api/products/:id` | Ya | ADMIN |
+| 28 | `POST` | `/api/stock-in` | Ya | ADMIN, GUDANG |
+| 29 | `GET` | `/api/stock-in` | Ya | ADMIN, GUDANG |
+| 30 | `GET` | `/api/receivables` | Ya | ADMIN, KASIR |
+| 31 | `GET` | `/api/receivables/:id` | Ya | ADMIN, KASIR |
+| 32 | `POST` | `/api/receivables/:id/pay` | Ya | KASIR |
+| 33 | `GET` | `/api/payments/:id/receipt.pdf` | Ya | KASIR |
+| 34 | `GET` | `/api/reports/sales` | Ya | ADMIN |
+| 35 | `GET` | `/api/reports/sales.pdf` | Ya | ADMIN |
+| 36 | `GET` | `/api/dashboard/kpi` | Ya | Semua role login |
 
 Tanpa sesi, endpoint terlindungi menjawab `401` dengan pesan
 `Sesi berakhir, silakan login kembali`. Role yang tidak diizinkan menjawab `403` dengan pesan
@@ -164,8 +185,9 @@ Role: ADMIN, SALES. Mengembalikan data kredit untuk UC-03/UC-04:
 ```
 
 `remaining_limit` dibatasi menjadi `0.00` bila negatif atau bila `credit_limit = 0`. Field
-`risk_score` dan `risk_label` **tidak ada** (FR-22 ditunda ke Sprint 3). `404`:
-`Pelanggan tidak ditemukan`; `400`: `ID pelanggan tidak valid`.
+`risk_score` dan `risk_label` **tetap tidak ada** pada endpoint ini: label risiko FR-22
+disajikan sebagai `risk` pada `/api/receivables`, sesuai keputusan biner yang disetujui.
+`404`: `Pelanggan tidak ditemukan`; `400`: `ID pelanggan tidak valid`.
 
 ## 11. GET /api/products
 
@@ -361,16 +383,354 @@ tidak mengubah status, stok, atau pembayaran.
 
 ---
 
-## Catatan implementasi Sprint 2
+## 18. POST /api/orders/:id/cancel
 
-- Halaman yang diizinkan Page Guard: `/pages/sales-order.html` (ADMIN, SALES),
-  `/pages/orders.html` dan `/pages/order-detail.html` (ADMIN, SALES, KASIR),
-  `/pages/payment.html` (KASIR). Guest diredirect ke login, role lain ke dashboard,
-  HTML di luar allowlist tetap `404`.
-- Sidebar frontend mengikuti `PAGE_ACCESS`; tidak ada menu KPI (Sprint 3).
-- Semua data API dirender dengan `textContent`. Tombol "Cetak Invoice" membuka URL kanonik
-  `/api/orders/:id/invoice.pdf?format=...` di tab baru melalui `window.DistriFlowAPI.openInvoice`.
-  Fetch/XHR tidak dipakai untuk PDF karena PDF viewer bawaan Chrome mengganti respons
-  `application/pdf` menjadi HTTP 204 kosong pada pengujian headless; navigasi tab memakai session
-  cookie yang sama dan tetap melalui role guard backend. Tidak ada endpoint tambahan.
-- Tidak ada endpoint pembatalan order dan tidak ada field risiko kredit pada Sprint 2.
+Khusus ADMIN. Body: `{ "reason": "Pelanggan membatalkan pesanan" }`. Alasan wajib,
+maksimal 255 karakter, disimpan di `sales_orders.cancel_reason`.
+
+Hanya order `DRAFT` atau `PIUTANG` yang boleh dibatalkan:
+
+- `DRAFT`: status berubah menjadi `BATAL`, **stok tidak diubah** karena DRAFT belum pernah
+  mengurangi stok.
+- `PIUTANG`: status berubah menjadi `BATAL`, stok **dikembalikan** (`products.stock = stock + qty`)
+  dan satu `stock_movements` per produk dengan `type = 'BATAL'`, `reference = order_no`,
+  dan `user_id` = Admin. Pelunasan uang muka dilakukan manual di luar sistem.
+
+Order dikunci `SELECT ... FOR UPDATE` di awal transaksi, sehingga pembatalan ganda
+menghasilkan `409`, bukan pengembalian stok dua kali. Sukses `200`:
+`data.order` memuat `status`, `cancel_reason`, `cancelled_by`, `cancelled_at`.
+
+Error: `400 ID sales order tidak valid` / `Alasan pembatalan wajib diisi` /
+`Alasan pembatalan maksimal 255 karakter`; `403` untuk selain ADMIN;
+`404 Order tidak ditemukan`; `409 Order tidak dapat dibatalkan` / `Order sudah dibatalkan` /
+`Order LUNAS tidak dapat dibatalkan`.
+
+## 19. GET /api/customers/:id
+
+Khusus ADMIN. `data.customer` memuat semua field pelanggan termasuk `is_active`.
+`404 Pelanggan tidak ditemukan`; `400 ID pelanggan tidak valid`.
+
+## 20. POST /api/customers
+
+Khusus ADMIN. Body:
+
+```json
+{
+  "code": "PLG-010",
+  "name": "Toko Baru",
+  "address": "Bandung",
+  "phone": "081234567890",
+  "price_level": "GROSIR",
+  "credit_limit": "5000000.00",
+  "payment_term_days": 14
+}
+```
+
+`price_level` = `RETAIL|GROSIR` (default `RETAIL`). `credit_limit` dan
+`payment_term_days` non-negatif; nomor telepon opsional maksimal 20 karakter.
+Sukses `201`: `data.customer` seperti endpoint 19. Kode duplikat → `409`.
+Pelanggan baru selalu aktif. Tidak ada endpoint `DELETE /api/customers/:id`.
+
+## 21. PUT /api/customers/:id
+
+Khusus ADMIN. Field yang sama dengan endpoint 20, semuanya opsional. `is_active`
+sengaja diabaikan pada PUT; gunakan PATCH. Kode duplikat → `409`; pelanggan tidak
+ditemukan → `404`.
+
+## 22. PATCH /api/customers/:id
+
+Khusus ADMIN. Body `{ "is_active": false }` (boolean wajib). Menonaktifkan pelanggan
+mencegah pemakaian pada order baru, tetapi piutang lama tetap terbaca pada
+`/api/receivables`. Tidak menghapus data atau sesi. `400 Status harus boolean`.
+
+## 23. GET /api/products/restock
+
+Role: ADMIN, GUDANG. Tanpa query. Rekomendasi dihitung dari database:
+
+- Rata-rata penjualan harian = total qty `sales_order_items` untuk order
+  `LUNAS`/`PIUTANG` dalam 30 hari terakhir dibagi 30.
+- Produk masuk daftar bila `stock <= min_stock` **atau** estimasi habis
+  `floor(stock / avg_daily) <= 7` hari. `avg_daily = 0` menghasilkan
+  `estimated_days: null`.
+- `suggested_qty = max(ceil(avg_daily * 14 - stock), min_stock - stock, 0)`.
+- Hanya produk aktif, maksimal 100 baris, diurutkan berdasarkan urgensi.
+
+```json
+{
+  "data": {
+    "products": [{
+      "id": 3,
+      "code": "SBN-08",
+      "name": "Sabun Cuci 800 g",
+      "unit": "pcs",
+      "stock": 9,
+      "min_stock": 10,
+      "avg_daily": 0.5,
+      "estimated_days": 18,
+      "suggested_qty": 1,
+      "reason": "Stok mencapai batas minimum"
+    }],
+    "generated_at": "2026-11-27T08:15:00.000Z"
+  }
+}
+```
+
+`reason`: `Stok mencapai batas minimum`, `Estimasi habis dalam 7 hari`, atau
+`Stok minimum dan estimasi habis dalam 7 hari`.
+
+## 24. GET /api/products/:id
+
+Role: ADMIN, GUDANG. `data.product` memuat field endpoint 11 ditambah `is_active`.
+Termasuk produk nonaktif agar Admin dapat mengubahnya. `404 Produk tidak ditemukan`.
+
+## 25. POST /api/products
+
+Khusus ADMIN. Body:
+
+```json
+{
+  "code": "BRS-99",
+  "name": "Beras Pandan Wangi",
+  "unit": "karung",
+  "price_retail": "75000.00",
+  "price_wholesale": "72000.00",
+  "min_stock": 50
+}
+```
+
+Field `stock` **ditolak** dengan `400 Stok awal harus dicatat melalui barang masuk`;
+stok awal selalu `0` dan hanya bertambah lewat `/api/stock-in`. Harga harus > 0,
+maksimal dua desimal; `min_stock` bilangan bulat >= 0. Sukses `201`:
+`data.product` seperti endpoint 24. Kode duplikat → `409`.
+
+## 26. PUT /api/products/:id
+
+Khusus ADMIN. Field sama dengan endpoint 25, opsional. `stock` tetap ditolak dan
+status hanya diubah lewat PATCH. `404 Produk tidak ditemukan`; kode duplikat → `409`.
+
+## 27. PATCH /api/products/:id
+
+Khusus ADMIN. Body `{ "is_active": false }`. Tidak mengubah stok. Produk nonaktif
+tidak muncul pada `/api/products`, `/api/products/by-code/:code`, atau transaksi baru.
+`400 Status harus boolean`.
+
+## 28. POST /api/stock-in
+
+Role: ADMIN, GUDANG. Body:
+
+```json
+{
+  "product_id": 1,
+  "qty": 12,
+  "document_no": "SJ.0112",
+  "invoice_match": true,
+  "note": "opsional",
+  "confirm_duplicate": false
+}
+```
+
+`invoice_match` wajib `true` (kesesuaian dengan detail faktur). `qty` bilangan bulat
+>= 1; `document_no` maksimal 50 karakter. Seluruh proses berada dalam satu transaksi:
+lock produk → cek aktif → cek duplikat → insert `stock_movements` `MASUK` →
+`UPDATE products SET stock = stock + ?`.
+
+Duplikat `document_no` **bukan** pemblokiran permanen. Permintaan pertama menjawab:
+
+```json
+{ "success": false, "message": "No. dokumen sudah dicatat", "needConfirm": true }
+```
+
+Kirim ulang payload yang sama dengan `"confirm_duplicate": true` untuk tetap mencatat.
+Sukses `201`: `data.movement = { id, product_id, product_code, product_name, qty,
+reference, type: 'MASUK', user_id, created_at, stock_after }`.
+
+Catatan: `note` divalidasi tetapi tidak dipersisten karena `stock_movements` tidak
+memiliki kolom `note` pada schema kanonik; skema sengaja tidak diubah.
+
+## 29. GET /api/stock-in
+
+Role: ADMIN, GUDANG. Query opsional: `search` (nomor dokumen/kode/nama barang),
+`date_from`, `date_to` (`YYYY-MM-DD`), `page`, `limit` (maksimal 100).
+Respons: `data.movements` dan `data.pagination = { page, limit, total, totalPages }`.
+
+## 30. GET /api/receivables
+
+Role: ADMIN, KASIR. Query opsional: `search`, `status` (default `PIUTANG`),
+`date_from`, `date_to`, `page`, `limit` (maksimal 100).
+
+```json
+{
+  "data": {
+    "receivables": [{
+      "id": 2,
+      "order_no": "SO-20261112-001",
+      "order_date": "2026-11-12",
+      "customer_id": 1,
+      "customer_code": "PLG-001",
+      "customer_name": "Toko Makmur",
+      "total": "2000000.00",
+      "paid": "0.00",
+      "outstanding": "2000000.00",
+      "due_date": "2026-11-20",
+      "status": "PIUTANG",
+      "risk": "Berisiko",
+      "payment_count": 0
+    }],
+    "pagination": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
+  }
+}
+```
+
+`risk` memakai aturan FR-22 yang disetujui: `Berisiko` bila
+`outstanding >= 0.8 * credit_limit` dan `credit_limit > 0`, jika tidak `Aman`.
+Tidak ada `risk_score`/`risk_label` numerik.
+
+## 31. GET /api/receivables/:id
+
+Role: ADMIN, KASIR. `data.receivable` memuat field endpoint 30 ditambah
+`payments: [...]`, `credit_limit`, dan `customer_outstanding` (total piutang
+pelanggan, bukan hanya order ini). `404` bila order tidak ada atau bukan `PIUTANG`.
+
+## 32. POST /api/receivables/:id/pay
+
+Khusus KASIR. Body:
+
+```json
+{
+  "nominal": "100000.00",
+  "method": "TRANSFER",
+  "reference": "BKK-202611-042",
+  "note": "opsional"
+}
+```
+
+`nominal` antara `0.01` dan `outstanding`; `method` = `TUNAI|TRANSFER`.
+Pembayaran sebagian dibolehkan; status berubah menjadi `LUNAS` hanya bila sisa menjadi nol.
+
+Urutan di dalam transaksi: validasi & normalisasi → lock order `FOR UPDATE` →
+cek `idempotency_key` → cek warisan `REF:` pada `note` (hanya baris lama tanpa
+kunci, jendela 60 detik) → cek status → hitung ulang outstanding → insert
+`payments` → update status bersyarat → baca ulang hasil.
+
+Idempotency tidak lagi bergantung pada jendela waktu. Kunci biner
+`payments.idempotency_key` berisi `REF:<reference>` bila reference dikirim, atau
+`AUTO:<sha256 payload>` bila tidak. Kunci dilindungi
+`UNIQUE KEY uq_payments_order_idem (sales_order_id, idempotency_key)`, sehingga dua
+request identik yang bersamaan maupun diulang setelah 60 detik tetap mengembalikan
+satu payment yang sama. `payments.request_hash` menyimpan sidik jari
+`(order, kunci, nominal, metode, kasir)`; kunci yang sama dengan payload berbeda
+ditolak. Awalan `REF:<kunci>|` pada `note` tetap dipertahankan untuk kompatibilitas
+respons, PDF, dan data historis.
+
+- Retry identik (kapan saja, termasuk setelah order `LUNAS`): `201` dengan
+  `message: "Pembayaran sudah tercatat sebelumnya"` dan `data.payment` berisi payment
+  yang sudah ada; tidak ada baris baru.
+- Kunci sama, nominal/metode berbeda: `409 Referensi pembayaran sudah dipakai untuk
+  nominal atau metode berbeda`.
+- Reference berbeda pada order yang masih `PIUTANG`: payment baru dibuat, sehingga
+  pembayaran parsial dan pelunasan dengan bukti berbeda tetap berjalan.
+- Request dengan kunci baru pada order yang bukan `PIUTANG`: `404 Piutang tidak
+  ditemukan` (perilaku lama dipertahankan).
+
+Sukses `201`: `data = { payment, receivable }`. Error: `400 Nominal tidak valid` /
+`Nominal melebihi sisa piutang` / `Metode pembayaran tidak valid` / `Referensi maksimal
+100 karakter`; `404 Piutang tidak ditemukan`; `409` untuk konflik kunci idempotency;
+`403` untuk selain KASIR.
+
+Catatan penerapan: `database/01_schema.sql` dan `database/distriflow_lengkap.sql`
+sudah memuat kolom/unique key untuk instalasi baru. Database existing memerlukan
+`database/03_payment_idempotency.sql`; migrasi ini **belum** diterapkan ke database
+utama `distriflow` dan menunggu persetujuan. Baris lama tidak di-backfill.
+
+## 33. GET /api/payments/:id/receipt.pdf
+
+Khusus KASIR. Respons PDF nyata: `200`, `Content-Type: application/pdf`,
+`Content-Disposition: inline; filename="receipt-....pdf"`, `Cache-Control: no-store`.
+Bukti memuat nomor order, pelanggan, nominal, metode, tanggal, total, dan sisa
+piutang. Tidak memuat credential atau hash. `404` bila pembayaran tidak ada.
+
+## 34. GET /api/reports/sales
+
+Khusus ADMIN. Query wajib: `date_from`, `date_to` (`YYYY-MM-DD`, `from <= to`).
+Omzet = total order `LUNAS` + `PIUTANG`; `DRAFT` dan `BATAL` dikecualikan.
+Ini adalah omzet transaksi, **bukan** uang yang sudah diterima, dan tanpa PPN.
+Seluruh angka diagregasi di database, bukan dengan membatasi 100 order di JavaScript.
+
+```json
+{
+  "data": {
+    "period": { "from": "2026-11-01", "to": "2026-11-27" },
+    "summary": {
+      "omzet": "123456789.00",
+      "totalOrders": 42,
+      "totalProductsSold": 150,
+      "cashTotal": "100000000.00",
+      "creditTotal": "23456789.00",
+      "receivablesTotal": "5000000.00",
+      "topProduct": { "code": "BRS-05", "name": "Beras Premium", "qty": 20, "sales": "1500000.00" }
+    },
+    "products": [{
+      "code": "BRS-05", "name": "Beras Premium", "unit": "karung",
+      "qty": 20, "sales": "1500000.00", "contributionPercent": 12.3
+    }],
+    "daily": [{ "date": "2026-11-27", "orders": 3, "omzet": "225000.00" }]
+  }
+}
+```
+
+Error: `400 Tanggal awal wajib diisi` / `Tanggal akhir wajib diisi` /
+`Format tanggal harus YYYY-MM-DD` / `Tanggal awal tidak boleh setelah tanggal akhir`.
+
+## 35. GET /api/reports/sales.pdf
+
+Khusus ADMIN. Filter sama dengan endpoint 34. Respons PDF riil dengan kop DistriFlow,
+periode, ringkasan, tabel produk, dan tabel harian. `Content-Type: application/pdf`,
+`Content-Disposition: inline; filename="laporan-penjualan-....pdf"`,
+`Cache-Control: no-store`. Tidak ada ekspor XLSX pada v1.0.
+
+## 36. GET /api/dashboard/kpi
+
+Semua role login. Satu permintaan mengembalikan KPI dan daftar stok menipis:
+
+```json
+{
+  "data": {
+    "omzetHariIni": "750000.00",
+    "orderHariIni": 4,
+    "piutangJatuhTempo": "2000000.00",
+    "stokMenipis": 2,
+    "perluRestock": 3,
+    "lowStock": [{ "code": "SBN-08", "name": "Sabun Cuci", "stock": 9, "min_stock": 10, "unit": "pcs" }],
+    "generatedAt": "2026-11-27T08:15:00.000Z"
+  }
+}
+```
+
+`omzetHariIni` = total order hari ini `LUNAS` + `PIUTANG`; `orderHariIni` =
+order hari ini tanpa `BATAL`; `piutangJatuhTempo` = outstanding `PIUTANG` dengan
+`due_date < hari ini`. `stokMenipis` = produk aktif dengan `stock <= min_stock`.
+`perluRestock` memakai aturan endpoint 23. Untuk `GUDANG`, angka keuangan sengaja
+dikembalikan sebagai `"0.00"`/`0` dan tidak pernah diambil dari database.
+
+---
+
+## Catatan implementasi Sprint 2 + Sprint 3
+
+- Backend melayani `frontend(new)` sebagai root statis dan direktori Page Guard.
+  Folder `frontend/` tetap ada sebagai backup dan tidak dihapus.
+- Page Guard kini memuat 16 halaman: UI-01…UI-18. Matriks peran:
+  `dashboard.html`/`change-password.html` untuk semua role login; `users.html`/
+  `user-form.html` ADMIN; `sales-order.html` ADMIN/SALES; `orders.html` dan
+  `order-detail.html` ADMIN/SALES/KASIR; `payment.html` dan `receivables.html` KASIR;
+  `products.html`/`stock-in.html` ADMIN/GUDANG; `product-form.html`/
+  `customer-form.html`/`reports.html` ADMIN; `customers.html` ADMIN/SALES/KASIR.
+  Guest diredirect ke login, role lain ke dashboard, HTML di luar allowlist `404`.
+- Semua data API dirender dengan `textContent`. Tombol PDF membuka tab lebih dulu
+  lalu memuat URL kanonik melalui `window.DistriFlowAPI.openPdf`; cookie sesi tetap
+  dikirim dan salah satu guard backend tetap berlaku. Fetch/XHR tidak dipakai untuk
+  `openInvoice` karena PDF viewer headless Chrome mengganti respons PDF menjadi 204.
+- Tombol XLSX, PO/supplier, kategori/rak, valuasi, DSI, WhatsApp/SMS, auto-lock, dan
+  Faktur Hold 50% sengaja dinonaktifkan dengan catatan backlog v1.0. Tidak ada
+  `localStorage` sebagai pengganti API, dan tidak ada endpoint rekaan.
+- Semua perubahan multi-tabel memakai `withTransaction()`; seluruh SQL memakai
+  placeholder `?`. Bukti PDF dihasilkan dari data nyata dan tidak menulis data.

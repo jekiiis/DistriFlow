@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Daftar pelanggan DistriFlow">
+  <title>Daftar Pelanggan - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-14 Daftar Pelanggan («boundary» CustomersPage) -->
+<body data-page="customers" data-roles="ADMIN,SALES,KASIR" data-title="Daftar Pelanggan" data-location="Gudang Utama Pasteur">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div>
+            <h1>Daftar Pelanggan</h1>
+            <p>Data toko dari <code>GET /api/customers</code>. Piutang dan risiko berasal dari endpoint kredit yang tersedia; penulisan data hanya untuk ADMIN.</p>
+          </div>
+          <button id="btnAdd" class="btn" type="button">+ Tambah Pelanggan</button>
+        </div>
+
+        <div id="customerAlert" class="alert err hidden" role="alert"></div>
+
+        <section class="ui-kpi-grid" aria-label="Ringkasan pelanggan">
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Total pelanggan tercatat</span><strong class="ui-kpi-value" id="kpiTotal">0</strong><span class="ui-kpi-foot">Toko aktif dari API</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Total piutang pelanggan</span><strong class="ui-kpi-value ui-kpi-value--sm" id="kpiOutstanding">Rp0</strong><span class="ui-kpi-foot" id="kpiOutstandingFoot">Dari data kredit resmi</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Pelanggan berisiko</span><strong class="ui-kpi-value" id="kpiRisk">0</strong><span class="ui-kpi-foot" id="kpiRiskFoot">Ambang 80% limit kredit</span></article>
+        </section>
+
+        <div class="ui-gap ui-gap--info">
+          <strong>Batasan akses:</strong> endpoint <code>GET /api/customers/:id/credit</code> hanya untuk ADMIN/SALES; KASIR melihat daftar pelanggan tanpa kolom piutang/risiko. Rancangan Figma memuat ambang 75%; sesuai keputusan yang disetujui, halaman ini memakai <strong>≥ 80%</strong>.
+        </div>
+
+        <section class="ui-card ui-card--flush">
+          <div style="padding:20px 22px 0">
+            <div class="ui-card-head">
+              <div><h2>Data Pelanggan</h2><p id="resultInfo">Memuat daftar pelanggan…</p></div>
+            </div>
+            <form id="filter" class="ui-toolbar" novalidate>
+              <div class="ui-field" style="flex:1;min-width:220px"><label for="search">Cari pelanggan</label><input id="search" type="search" placeholder="Cari kode, nama toko, pemilik…" autocomplete="off"></div>
+              <div class="ui-field"><label for="level">Level harga</label><select id="level"><option value="">Semua Level</option><option value="RETAIL">Retail</option><option value="GROSIR">Grosir</option></select></div>
+              <div class="ui-field"><label for="risk">Risiko</label><select id="risk"><option value="">Semua Risiko</option><option value="Aman">Aman</option><option value="Berisiko">Berisiko</option><option value="Tidak tersedia">Tidak tersedia</option></select></div>
+              <div class="ui-field"><label for="limit">Baris per halaman</label><select id="limit"><option>10</option><option>25</option><option>50</option><option>100</option></select></div>
+              <button class="btn" type="submit">Tampilkan</button>
+            </form>
+          </div>
+          <div class="table-wrap">
+            <table class="ui-table">
+              <thead><tr>
+                <th>Kode</th><th>Nama toko</th><th>Alamat &amp; kontak</th><th>Level harga</th>
+                <th class="num">Limit kredit</th><th class="num">Piutang berjalan</th>
+                <th>Risiko</th><th>Status</th><th class="right">Aksi</th>
+              </tr></thead>
+              <tbody id="customerBody"></tbody>
+            </table>
+          </div>
+          <div class="ui-pager">
+            <span class="muted" id="paginationInfo">-</span>
+            <div class="ui-pager-group">
+              <button class="btn secondary" id="prevPage" type="button">Sebelumnya</button>
+              <span class="muted" id="pageLabel">1</span>
+              <button class="btn secondary" id="nextPage" type="button">Selanjutnya</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="ui-notes-grid">
+          <div class="ui-note"><h3>Ketentuan Plafon Kredit Pelanggan</h3><p>Berisiko jika piutang berjalan mencapai atau melampaui 80% dari limit kredit.</p></div>
+          <div class="ui-note"><h3>Jadwal Pengiriman Distribusi</h3><p>Catatan rancangan: Bandung Barat/Astana Anyar setiap hari kerja pukul 08:30 WIB dari Gudang Utama Pasteur.</p></div>
+          <div class="ui-note"><h3>Status &amp; Ubah Data</h3><p>Admin dapat menambah, mengubah, serta mengaktifkan atau menonaktifkan pelanggan dari halaman ini.</p></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/customers.js"></script>
+</body>
+</html>

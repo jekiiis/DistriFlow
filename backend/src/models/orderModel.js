@@ -5,6 +5,10 @@ const customerModel = require('./customerModel');
 const productModel = require('./productModel');
 
 const STATUS_DRAFT = 'DRAFT';
+const STATUS_PIUTANG = 'PIUTANG';
+const STATUS_BATAL = 'BATAL';
+// FR-09: hanya DRAFT dan PIUTANG yang boleh dibatalkan Admin.
+const CANCELLABLE_STATUSES = [STATUS_DRAFT, STATUS_PIUTANG];
 // Format tampilan tanggal header adalah YYYY-MM-DD.
 const DATE_FORMAT = '%Y-%m-%d';
 // Nomor order memakai YYYYMMDD sesuai konvensi SO-YYYYMMDD-NNN.
@@ -262,7 +266,73 @@ async function findDetailById(id, connection = null) {
   return { ...headers[0], items, payments };
 }
 
+/** Lock produk sebelum stok dibaca/diubah. Urutan lock ditentukan service. */
+async function lockProductById(id, connection) {
+  const tx = assertTransaction(connection, 'lockProductById');
+  const run = getExecutor(tx);
+  const sql = `SELECT id, code, stock
+    FROM products
+    WHERE id = ?
+    LIMIT 1
+    FOR UPDATE`;
+  const [rows] = await run(sql, [id]);
+
+  return rows[0] || null;
+}
+
+/** Pengembalian stok: hanya menambah, tidak pernah mengurangi. */
+async function returnStock(connection, productId, qty) {
+  const tx = assertTransaction(connection, 'returnStock');
+  const run = getExecutor(tx);
+  const sql = `UPDATE products
+    SET stock = stock + ?
+    WHERE id = ?`;
+  const [result] = await run(sql, [qty, productId]);
+
+  return Number(result.affectedRows);
+}
+
+/** Satu pergerakan BATAL per produk; stok sudah dikunci oleh service. */
+async function insertCancelMovement(connection, movement) {
+  const tx = assertTransaction(connection, 'insertCancelMovement');
+  const run = getExecutor(tx);
+  const sql = `INSERT INTO stock_movements
+    (product_id, user_id, type, qty, reference)
+    VALUES (?, ?, 'BATAL', ?, ?)`;
+  const [result] = await run(sql, [
+    movement.productId,
+    movement.userId,
+    movement.qty,
+    movement.reference
+  ]);
+
+  return Number(result.insertId);
+}
+
+/** Status hanya diubah dari dua status yang diizinkan FR-09. */
+async function cancelOrder(connection, id, update) {
+  const tx = assertTransaction(connection, 'cancelOrder');
+  const run = getExecutor(tx);
+  const sql = `UPDATE sales_orders
+    SET status = ?, cancel_reason = ?, cancelled_by = ?, cancelled_at = NOW()
+    WHERE id = ? AND status IN (?, ?)`;
+  const [result] = await run(sql, [
+    STATUS_BATAL,
+    update.reason,
+    update.cancelledBy,
+    id,
+    CANCELLABLE_STATUSES[0],
+    CANCELLABLE_STATUSES[1]
+  ]);
+
+  return Number(result.affectedRows);
+}
+
 module.exports = {
+  STATUS_DRAFT,
+  STATUS_PIUTANG,
+  STATUS_BATAL,
+  CANCELLABLE_STATUSES,
   findActiveCustomerById,
   findActiveProductByCode,
   getOrderDate,
@@ -275,5 +345,9 @@ module.exports = {
   lockForUpdate,
   findItemsByOrderId,
   findPaymentsByOrderId,
-  findDetailById
+  findDetailById,
+  lockProductById,
+  returnStock,
+  insertCancelMovement,
+  cancelOrder
 };

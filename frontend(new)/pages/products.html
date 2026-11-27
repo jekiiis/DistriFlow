@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Daftar barang dan inventaris DistriFlow">
+  <title>Daftar Barang - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-11 Daftar Barang & Inventaris («boundary» ProductsPage) -->
+<body data-page="products" data-roles="ADMIN,GUDANG" data-title="Daftar Barang" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div>
+            <h1>Daftar Barang &amp; Inventaris</h1>
+            <p>Data barang berasal dari <code>GET /api/products</code> dan saran restock dari <code>GET /api/products/restock</code>. Pengubahan data dan status hanya tersedia untuk ADMIN.</p>
+          </div>
+          <a class="btn secondary" href="dashboard.html">Kembali ke Dashboard</a>
+        </div>
+
+        <div id="productAlert" class="alert err hidden" role="alert"></div>
+
+        <section class="ui-kpi-grid" aria-label="Ringkasan inventaris">
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Total barang aktif</span><strong class="ui-kpi-value" id="kpiSku">0</strong><span class="ui-kpi-foot" id="kpiSkuFoot">SKU tercatat di API</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Perlu restock</span><strong class="ui-kpi-value" id="kpiLow">0</strong><span class="ui-kpi-foot" id="kpiLowFoot">Berdasarkan saran backend</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Stok habis</span><strong class="ui-kpi-value" id="kpiOut">0</strong><span class="ui-kpi-foot">Pada halaman yang dimuat</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Valuasi / DSI</span><strong class="ui-kpi-value ui-kpi-value--sm" id="kpiUnavailable">Tidak tersedia</strong><span class="ui-kpi-foot">Tidak ada endpoint resmi</span></article>
+        </section>
+
+        <div class="ui-gap ui-gap--info">
+          <strong>Catatan cakupan:</strong> ekspor XLSX dan modul Pengadaan (PO) belum termasuk cakupan v1.0, sehingga tombol terkait sengaja dinonaktifkan. Saran restock dihitung oleh backend, bukan dari data satu halaman.
+        </div>
+
+        <section class="ui-card ui-card--flush">
+          <div style="padding:20px 22px 0">
+            <div class="ui-card-head">
+              <div><h2>Data Barang</h2><p id="resultInfo">Memuat daftar barang…</p></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="btnAdd" class="btn" type="button">+ Tambah</button>
+                <button id="btnExport" class="btn secondary" type="button" disabled title="Ekspor XLSX masuk backlog v1.0">Ekspor</button>
+              </div>
+            </div>
+            <form id="filter" class="ui-toolbar" novalidate>
+              <div class="ui-field" style="flex:1;min-width:220px"><label for="search">Cari barang</label><input id="search" type="search" placeholder="Cari barang (kode atau nama barang)" autocomplete="off"></div>
+              <div class="ui-field"><label for="category">Kategori</label><select id="category" disabled><option>Semua Kategori</option></select><div class="ui-hint">Kategori/rak belum tersedia sebagai endpoint API.</div></div>
+              <div class="ui-field"><label class="ui-inline-check"><input id="lowOnly" type="checkbox"> Hanya stok menipis</label></div>
+              <div class="ui-field"><label for="limit">Baris per halaman</label><select id="limit"><option>25</option><option>10</option><option>50</option><option>100</option></select></div>
+              <button class="btn" type="submit">Tampilkan</button>
+            </form>
+          </div>
+          <div class="table-wrap">
+            <table class="ui-table">
+              <thead><tr>
+                <th>Kode</th><th>Nama barang</th><th>Satuan</th><th class="num">Harga retail</th>
+                <th class="num">Harga grosir</th><th class="num">Stok</th><th>Perkiraan habis</th>
+                <th>Status</th><th class="right">Aksi</th>
+              </tr></thead>
+              <tbody id="productBody"></tbody>
+            </table>
+          </div>
+          <div class="ui-pager">
+            <span class="muted" id="paginationInfo">-</span>
+            <div class="ui-pager-group">
+              <button class="btn secondary" id="prevPage" type="button">Sebelumnya</button>
+              <span class="muted" id="pageLabel">1</span>
+              <button class="btn secondary" id="nextPage" type="button">Selanjutnya</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="ui-card ui-card--flush">
+          <div style="padding:20px 22px 0">
+            <div class="ui-card-head">
+              <div>
+                <h2>Peringatan Pengadaan &amp; Restock Barang</h2>
+                <p id="restockInfo">Memuat saran restock dari backend…</p>
+              </div>
+              <button id="btnPO" class="btn secondary" type="button" disabled title="Modul PO belum termasuk cakupan v1.0">Buka Modul Pengadaan (PO)</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="ui-table">
+              <thead><tr>
+                <th>Barang</th><th class="num">Stok saat ini</th><th class="num">Stok minimum</th>
+                <th>Rata-rata/hari</th><th>Perkiraan habis</th><th class="num">Saran restock</th>
+                <th>Alasan</th><th>Tindakan</th>
+              </tr></thead>
+              <tbody id="restockBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="ui-notes-grid">
+          <div class="ui-note"><h3>Kebijakan Stok Minimum</h3><p>Barang disebut menipis ketika stok saat ini kurang dari atau sama dengan stok minimum.</p></div>
+          <div class="ui-note"><h3>Restock &amp; PO</h3><p>Saran restock berasal dari stok minimum, rata-rata pemakaian harian, dan perkiraan habis yang dihitung backend. Lead time pemasok dan modul purchase order belum termasuk v1.0.</p></div>
+          <div class="ui-note"><h3>Status Barang</h3><p>Admin dapat menonaktifkan barang dari daftar ini. Perubahan status langsung diterapkan oleh backend.</p></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/products.js"></script>
+</body>
+</html>

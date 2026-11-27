@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Form tambah dan ubah pelanggan DistriFlow">
+  <title>Tambah Pelanggan Baru - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-15 Tambah/Ubah Pelanggan («boundary» CustomerFormPage) -->
+<body data-page="customers" data-roles="ADMIN" data-title="Tambah Pelanggan Baru" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div>
+            <h1 id="formTitle">Tambah Pelanggan Baru</h1>
+            <p id="formSubtitle">Informasi legalitas dan operasional titik distribusi toko pelanggan.</p>
+          </div>
+          <a class="btn secondary" href="customers.html">Kembali ke Daftar Pelanggan</a>
+        </div>
+
+        <div id="customerFormAlert" class="alert err hidden" role="alert"></div>
+
+        <form id="customerForm" novalidate>
+          <div class="ui-grid-2">
+            <div>
+              <section class="ui-card">
+                <div class="ui-section-head"><span class="ui-step">1</span><h3>Identitas &amp; Kontak Toko</h3></div>
+                <div class="ui-form-grid">
+                  <div class="ui-field ui-field--full">
+                    <label for="code">Kode Pelanggan *</label>
+                    <input id="code" name="code" class="input" placeholder="PLG-008" maxlength="20">
+                    <p id="codeHint" class="ui-hint">Kode unik pelanggan — otomatis atau manual.</p>
+                    <button id="btnCheckCode" class="btn secondary small" type="button" style="margin-top:8px">Cek kode pada API</button>
+                    <p id="codeResult" class="ui-hint" role="status">Belum ada pemeriksaan kode.</p>
+                  </div>
+                  <div class="ui-field">
+                    <label for="name">Nama Toko *</label>
+                    <input id="name" name="name" class="input" placeholder="Contoh: Toko Barokah Jaya">
+                  </div>
+                  <div class="ui-field">
+                    <label for="phone">No. HP / WhatsApp</label>
+                    <input id="phone" name="phone" class="input" inputmode="tel" placeholder="08xxxxxxxxxx">
+                    <p class="ui-hint">10–14 digit bila diisi. Notifikasi WhatsApp/SMS belum tersedia pada backend.</p>
+                  </div>
+                  <div class="ui-field ui-field--full">
+                    <label for="address">Alamat Lengkap Toko *</label>
+                    <textarea id="address" name="address" class="textarea" rows="3" placeholder="Alamat lengkap outlet atau toko fisik…"></textarea>
+                  </div>
+                  <div class="ui-field ui-field--full">
+                    <label class="ui-inline-check"><input id="active" name="is_active" type="checkbox" checked> Status Pelanggan Aktif</label>
+                    <p class="ui-hint">Pelanggan aktif dapat dipilih pada modul penjualan.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="ui-card">
+                <div class="ui-section-head"><span class="ui-step">2</span><h3>Ketentuan Penjualan &amp; Fasilitas Kredit</h3></div>
+                <div class="ui-form-grid">
+                  <div class="ui-field">
+                    <label for="level">Level Harga Penjualan</label>
+                    <select id="level" name="price_level" class="select"><option value="RETAIL">Retail (Harga Satuan Standar)</option><option value="GROSIR">Grosir (Harga Distributor)</option></select>
+                  </div>
+                  <div class="ui-field">
+                    <label for="limit">Limit Kredit (Plafon Piutang)</label>
+                    <input id="limit" name="credit_limit" class="input" inputmode="decimal" placeholder="Rp 5.000.000">
+                    <p class="ui-hint">Isi 0 jika transaksi hanya diizinkan tunai (Cash Only).</p>
+                  </div>
+                  <div class="ui-field">
+                    <label for="term">Tempo Jatuh Tempo (Hari)</label>
+                    <input id="term" name="payment_term_days" class="input" inputmode="numeric" placeholder="14 Hari">
+                  </div>
+                  <div class="ui-field">
+                    <label for="eligibility">Status Kelayakan Kredit Awal</label>
+                    <select id="eligibility" class="select" disabled><option>Tersedia</option><option>Tidak tersedia</option></select>
+                    <p class="ui-hint">Kelayakan kredit bukan field backend; pilihan ini tidak disimpan.</p>
+                  </div>
+                </div>
+                <div class="ui-actions">
+                  <a class="btn secondary" href="customers.html">Batal</a>
+                  <button id="btnSimpan" class="btn" type="submit">Simpan Pelanggan</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </form>
+
+        <div class="ui-notes-grid">
+          <div class="ui-note"><h3>Kebijakan Piutang DistriFlow</h3><p>Limit kredit ditegakkan saat proses pembayaran. Faktur Hold 50%, auto-lock, dan pengingat WhatsApp/SMS tidak diimplementasikan sesuai keputusan yang disetujui.</p></div>
+          <div class="ui-note"><h3>Plafon Kredit Fleksibel</h3><p>Perubahan plafon kredit dan tempo pembayaran dapat disimpan melalui form ini.</p></div>
+          <div class="ui-note"><h3>Integrasi POS Kasir</h3><p>Pelanggan yang dibuat atau diubah pada halaman ini dapat dipilih di modul penjualan sesuai peran pengguna.</p></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/customer-form.js"></script>
+</body>
+</html>

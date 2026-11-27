@@ -18,4 +18,10 @@ async function show(req, res) {
   return success(res, { order }, 'Detail sales order');
 }
 
-module.exports = { store, index, show };
+// FR-09: alasan dan identitas Admin berasal dari request yang sudah divalidasi.
+async function cancel(req, res) {
+  const order = await orderService.cancelOrder(req.params.id, req.body || {}, req.session.user.id);
+  return success(res, { order }, 'Sales order berhasil dibatalkan');
+}
+
+module.exports = { store, index, show, cancel };

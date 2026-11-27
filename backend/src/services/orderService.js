@@ -18,7 +18,13 @@ const MESSAGE = Object.freeze({
   CODE_REQUIRED: 'Kode barang wajib diisi',
   QUANTITY_INVALID: 'Jumlah tidak valid',
   DISCOUNT_INVALID: 'Diskon tidak valid',
-  ORDER_NO_FAILED: 'Gagal membuat nomor sales order, silakan coba lagi'
+  ORDER_NO_FAILED: 'Gagal membuat nomor sales order, silakan coba lagi',
+  ORDER_NOT_FOUND: 'Order tidak ditemukan',
+  LUNAS_NOT_CANCELLABLE: 'Order LUNAS tidak dapat dibatalkan',
+  CANCEL_NOT_ALLOWED: 'Order tidak dapat dibatalkan',
+  ALREADY_CANCELLED: 'Order sudah dibatalkan',
+  CANCEL_REASON_REQUIRED: 'Alasan pembatalan wajib diisi',
+  CANCEL_REASON_TOO_LONG: 'Alasan pembatalan maksimal 255 karakter'
 });
 
 function isBlank(value) {
@@ -406,11 +412,125 @@ async function getOrder(id, actor = {}) {
   return toPublicOrder(order);
 }
 
+const CANCELLABLE_STATUSES = ['DRAFT', 'PIUTANG'];
+const MAX_CANCEL_REASON_LENGTH = 255;
+
+function parseCancelReason(value) {
+  if (typeof value !== 'string') {
+    throw new AppError(MESSAGE.CANCEL_REASON_REQUIRED, HTTP_STATUS.BAD_REQUEST);
+  }
+
+  const reason = value.trim();
+  if (reason === '') {
+    throw new AppError(MESSAGE.CANCEL_REASON_REQUIRED, HTTP_STATUS.BAD_REQUEST);
+  }
+  if (reason.length > MAX_CANCEL_REASON_LENGTH) {
+    throw new AppError(MESSAGE.CANCEL_REASON_TOO_LONG, HTTP_STATUS.BAD_REQUEST);
+  }
+
+  return reason;
+}
+
+/** Satu entri per produk agar satu produk hanya dapat satu movement BATAL. */
+function mergeItemsByProduct(items) {
+  const merged = new Map();
+
+  for (const item of items || []) {
+    const productId = Number(item.product_id);
+    const qty = Number(item.qty);
+    if (!Number.isSafeInteger(productId) || productId <= 0 ||
+        !Number.isSafeInteger(qty) || qty <= 0) {
+      throw new Error('Item sales order tidak valid');
+    }
+
+    const total = merged.get(productId) || 0;
+    merged.set(productId, total + qty);
+  }
+
+  return Array.from(merged.entries())
+    .map(([productId, qty]) => ({ productId, qty }))
+    .sort((a, b) => a.productId - b.productId);
+}
+
+/**
+ * FR-09: stok dikembalikan hanya untuk order PIUTANG (paymentService sudah
+ * menguranginya saat pembayaran). Produk dikunci ASC menurut id agar dua
+ * transaksi tidak saling menunggu dengan urutan berbeda.
+ */
+async function applyCancelStock(connection, order, items, adminId) {
+  for (const item of mergeItemsByProduct(items)) {
+    const product = await orderModel.lockProductById(item.productId, connection);
+    if (!product) {
+      throw new AppError(MESSAGE.PRODUCT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+
+    const affected = await orderModel.returnStock(connection, item.productId, item.qty);
+    if (affected !== 1) {
+      throw new Error('Gagal mengembalikan stok sales order');
+    }
+
+    await orderModel.insertCancelMovement(connection, {
+      productId: item.productId,
+      userId: adminId,
+      qty: item.qty,
+      reference: order.order_no
+    });
+  }
+}
+
+async function cancelInTransaction(orderId, reason, adminId) {
+  return withTransaction(async (connection) => {
+    const order = await orderModel.lockForUpdate(orderId, connection);
+    if (!order) {
+      throw new AppError(MESSAGE.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+    if (order.status === 'BATAL') {
+      throw new AppError(MESSAGE.ALREADY_CANCELLED, HTTP_STATUS.CONFLICT);
+    }
+    if (!CANCELLABLE_STATUSES.includes(order.status)) {
+      throw new AppError(
+        order.status === 'LUNAS' ? MESSAGE.LUNAS_NOT_CANCELLABLE : MESSAGE.CANCEL_NOT_ALLOWED,
+        HTTP_STATUS.CONFLICT
+      );
+    }
+
+    if (order.status === 'PIUTANG') {
+      const items = await orderModel.findItemsByOrderId(orderId, connection);
+      await applyCancelStock(connection, order, items, adminId);
+    }
+
+    const affected = await orderModel.cancelOrder(connection, orderId, {
+      reason,
+      cancelledBy: adminId
+    });
+    if (affected !== 1) {
+      throw new AppError(MESSAGE.ALREADY_CANCELLED, HTTP_STATUS.CONFLICT);
+    }
+
+    const detail = await orderModel.findDetailById(orderId, connection);
+    if (!detail) {
+      throw new Error('Sales order tidak ditemukan setelah dibatalkan');
+    }
+
+    return toPublicOrder(detail);
+  });
+}
+
+/** FR-09: pembatalan DRAFT/PIUTANG oleh Admin, alasan wajib, stok untuk PIUTANG. */
+async function cancelOrder(id, input = {}, userId) {
+  const orderId = parseOrderId(id);
+  const reason = parseCancelReason((input || {}).reason);
+  const adminId = parseSessionUserId(userId);
+
+  return cancelInTransaction(orderId, reason, adminId);
+}
+
 module.exports = {
   MESSAGE,
   MAX_ORDER_NO_ATTEMPTS,
   createOrder,
   listOrders,
   getOrder,
+  cancelOrder,
   toPublicOrder
 };

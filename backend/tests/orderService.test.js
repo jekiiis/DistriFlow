@@ -291,14 +291,19 @@ describe('orderService.createOrder — transaksi dan nomor order', () => {
     expect(orderModel.findDetailById).not.toHaveBeenCalled();
   });
 
-  test('DRAFT tidak memanggil query stok/payment/movement', () => {
-    const source = require('fs').readFileSync(
-      require('path').resolve(__dirname, '../src/services/orderService.js'),
-      'utf8'
-    );
-    expect(source).not.toMatch(/UPDATE\s+products/i);
-    expect(source).not.toMatch(/INSERT\s+INTO\s+payments/i);
-    expect(source).not.toMatch(/stock_movements/i);
+  test('DRAFT tidak memanggil query stok/payment/movement', async () => {
+    await orderService.createOrder({
+      customer_id: 7,
+      items: [{ code: 'BRS-05', qty: 1 }]
+    }, 2);
+
+    // SQL pembatalan berada di orderModel, bukan di orderService. Assertion
+    // harus membuktikan perilaku createOrder, bukan menyusuri teks sumber.
+    expect(orderModel.lockProductById).not.toHaveBeenCalled();
+    expect(orderModel.returnStock).not.toHaveBeenCalled();
+    expect(orderModel.insertCancelMovement).not.toHaveBeenCalled();
+    expect(orderModel.insertHeader).toHaveBeenCalledTimes(1);
+    expect(orderModel.insertItems).toHaveBeenCalledTimes(1);
   });
 });
 

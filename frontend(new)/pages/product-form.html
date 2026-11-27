@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Form tambah dan ubah barang DistriFlow">
+  <title>Tambah Barang Baru - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-12 Tambah/Ubah Barang («boundary» ProductFormPage) -->
+<body data-page="products" data-roles="ADMIN" data-title="Tambah Barang Baru" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div>
+            <h1 id="formTitle">Tambah Barang Baru</h1>
+            <p id="formSubtitle">Daftarkan kode item, satuan distribusi, dan penetapan harga jual resmi.</p>
+          </div>
+          <a class="btn secondary" href="products.html">Kembali ke Data Barang</a>
+        </div>
+
+        <div id="productFormAlert" class="alert err hidden" role="alert"></div>
+
+        <form id="productForm" novalidate>
+          <div class="ui-grid-2">
+            <div>
+              <section class="ui-card">
+                <div class="ui-section-head"><span class="ui-step">1</span><h3>Informasi Dasar Produk</h3></div>
+                <div class="ui-form-grid">
+                  <div class="ui-field">
+                    <label for="code">Kode Barang *</label>
+                    <input id="code" name="code" class="input" placeholder="CONTOH: BRS-06 ATAU MNY-02" maxlength="20">
+                    <p id="codeHint" class="ui-hint">Kode SKU unik untuk barcode dan inventaris gudang. (Maks. 20 Karakter)</p>
+                    <button id="btnCheckCode" class="btn secondary small" type="button" style="margin-top:8px">Cek kode pada API</button>
+                    <p id="codeResult" class="ui-hint" role="status">Belum ada pemeriksaan kode.</p>
+                  </div>
+                  <div class="ui-field">
+                    <label for="name">Nama Barang *</label>
+                    <input id="name" name="name" class="input" placeholder="Contoh: Beras Pandan Wangi 5 kg">
+                  </div>
+                  <div class="ui-field">
+                    <label for="unit">Satuan *</label>
+                    <input id="unit" name="unit" class="input" placeholder="karung (Karung / Sak)">
+                  </div>
+                  <div class="ui-field">
+                    <label for="category">Kategori Barang</label>
+                    <select id="category" name="category" class="select" disabled>
+                      <option>Sembako &amp; Beras</option>
+                      <option>Minyak &amp; Lemak</option>
+                      <option>Kebutuhan Rumah Tangga</option>
+                    </select>
+                    <p class="ui-hint">Kategori hanya rujukan rancangan, bukan field backend; tidak disimpan.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="ui-card">
+                <div class="ui-section-head"><span class="ui-step">2</span><h3>Penetapan Harga &amp; Batas Stok</h3></div>
+                <div class="ui-form-grid">
+                  <div class="ui-field">
+                    <label for="priceRetail">Harga Retail *</label>
+                    <input id="priceRetail" name="price_retail" class="input" inputmode="decimal" placeholder="Rp 75000">
+                  </div>
+                  <div class="ui-field">
+                    <label for="priceWholesale">Harga Grosir *</label>
+                    <input id="priceWholesale" name="price_wholesale" class="input" inputmode="decimal" placeholder="Rp 72000">
+                  </div>
+                  <div class="ui-field">
+                    <label for="minStock">Stok Minimum *</label>
+                    <input id="minStock" name="min_stock" class="input" inputmode="numeric" placeholder="50">
+                  </div>
+                  <div class="ui-field">
+                    <label for="initialStock">Stok Awal Gudang (Tidak Disimpan)</label>
+                    <input id="initialStock" class="input" inputmode="numeric" placeholder="0">
+                    <p class="ui-hint">Nilai ini tidak dikirim ke API; stok awal dicatat melalui menu Barang Masuk.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="ui-card">
+                <div class="ui-section-head"><span class="ui-step">3</span><h3>Status &amp; Visibilitas</h3></div>
+                <label class="ui-inline-check"><input id="active" type="checkbox" checked> Status Barang Aktif</label>
+                <p id="activeHint" class="ui-hint">Status barang diubah terpisah dari Daftar Barang; tidak dikirim pada form ini.</p>
+                <p class="ui-hint">Barang aktif dapat dipilih di menu Sales Order dan POS Kasir.</p>
+                <div class="ui-actions">
+                  <a class="btn secondary" href="products.html">Batal</a>
+                  <button id="btnSimpan" class="btn" type="submit">Simpan Barang</button>
+                </div>
+              </section>
+            </div>
+
+            <aside>
+              <section class="ui-card">
+                <h2>Catatan Kebijakan</h2>
+                <div class="ui-note" style="margin-top:12px"><h3>Kebijakan Harga Grosir</h3><p>Harga grosir dan MOQ ditetapkan sesuai kebijakan internal. Nilai harga retail/grosir dikirim ke API dalam format desimal.</p></div>
+                <div class="ui-note"><h3>Sistem Barcode &amp; Satuan</h3><p>Kode barang menjadi identitas data dan tidak dapat diubah pada mode Ubah. Stok fisik dicatat melalui mutasi barang masuk.</p></div>
+                <div class="ui-note"><h3>Format IDR Standar</h3><p>Harga ditampilkan dalam format Rupiah dan dikonversi ke nilai desimal sebelum dikirim.</p></div>
+                <p class="ui-subtext">Diperbarui: Hari Ini · WIB</p>
+                <p class="ui-subtext">Menandakan kolom wajib diisi.</p>
+              </section>
+            </aside>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/product-form.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detail Sales Order - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-08 Detail Sales Order («boundary» SalesOrderDetailPage) -->
+<body data-page="orders" data-roles="ADMIN,SALES,KASIR" data-title="Detail Sales Order" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div>
+            <h1>Detail <span id="no">Sales Order</span> <span id="status"></span></h1>
+            <p id="sub">Detail sales order, rincian barang, dan riwayat pembayaran.</p>
+          </div>
+          <a class="btn secondary" href="orders.html">Kembali ke Daftar</a>
+        </div>
+        <div id="detailAlert" class="alert err hidden" role="alert"></div>
+
+        <div class="ui-grid-2">
+          <div>
+            <section class="ui-card">
+              <div class="ui-card-head"><div><h2>Identitas Order</h2><p>Data tersimpan dari transaksi.</p></div></div>
+              <dl class="ui-dl" id="label1"></dl>
+            </section>
+            <section class="ui-card ui-card--flush">
+              <div style="padding:20px 22px 0"><div class="ui-card-head"><div><h2>Rincian Barang</h2><p>Harga, diskon, dan subtotal sesuai data order.</p></div></div></div>
+              <div class="table-wrap">
+                <table class="ui-table">
+                  <thead><tr><th>Kode</th><th>Nama barang</th><th class="num">Harga</th><th class="num">Qty</th><th class="num">Diskon</th><th class="num">Subtotal</th></tr></thead>
+                  <tbody id="table1"></tbody>
+                  <tfoot><tr><td colspan="5" class="right">Total</td><td class="num" id="label2">Rp0</td></tr></tfoot>
+                </table>
+              </div>
+            </section>
+            <section class="ui-card ui-card--flush">
+              <div style="padding:20px 22px 0"><div class="ui-card-head"><div><h2>Riwayat Pembayaran</h2><p id="payInfo">Belum ada pembayaran.</p></div></div></div>
+              <div class="table-wrap">
+                <table class="ui-table">
+                  <thead><tr><th>Waktu</th><th>Kasir</th><th>Metode</th><th class="num">Nominal</th><th class="num">Kembalian</th><th>Catatan</th></tr></thead>
+                  <tbody id="tblPay"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <div>
+            <section class="ui-card ui-kpi-grid" style="grid-template-columns:1fr;margin-bottom:18px">
+              <article class="ui-kpi-card"><span class="ui-kpi-label">Total tagihan</span><strong class="ui-kpi-value" id="totalTagihan">Rp0</strong><span class="ui-kpi-foot" id="totalInfo">Belum dimuat</span></article>
+            </section>
+            <section class="ui-card hidden" id="bayarCard">
+              <h2>Pembayaran</h2>
+              <p class="muted">Order masih Draft dan menunggu diproses Kasir.</p>
+              <a class="btn" id="btnBayar" href="#">Bayar Order</a>
+            </section>
+            <section class="ui-card hidden" id="cetakCard">
+              <h2>Cetak Invoice (UI-10)</h2>
+              <p class="muted">PDF A4 atau struk 80 mm dibuat langsung dari endpoint backend.</p>
+              <div class="ui-field"><label for="format">Format</label><select id="format"><option value="a4">A4</option><option value="80mm">Struk 80 mm</option></select></div>
+              <button class="btn" id="btnCetak" type="button" style="width:100%;margin-top:12px">Cetak Invoice</button>
+            </section>
+            <section class="ui-card hidden" id="batalCard">
+              <h2>Pembatalan Order</h2>
+              <p class="muted" id="batalInfo">Hanya Admin untuk order Draft atau Piutang.</p>
+              <div class="ui-field">
+                <label for="batalAlasan">Alasan pembatalan *</label>
+                <textarea id="batalAlasan" class="textarea" rows="2" maxlength="255" placeholder="Contoh: Pelanggan membatalkan pesanan"></textarea>
+                <p class="ui-hint">Wajib diisi. Stok dikembalikan hanya untuk order berstatus Piutang.</p>
+              </div>
+              <button class="btn danger" id="btnBatal" type="button" disabled style="width:100%;margin-top:12px">Batalkan Order</button>
+            </section>
+            <section class="ui-card hidden" id="editCard">
+              <h2>Ubah Pesanan</h2>
+              <p class="muted">Pembaruan sales order belum tersedia pada API v1.0; tombol ini sengaja dinonaktifkan.</p>
+              <button class="btn secondary" id="btnEdit" type="button" disabled style="width:100%">Ubah Pesanan</button>
+            </section>
+            <section class="ui-card hidden" id="cancelInfo">
+              <h2>Dibatalkan</h2>
+              <dl class="ui-dl" id="cancelList"></dl>
+            </section>
+            <div class="ui-note">
+              <h3>Prosedur loket kasir</h3>
+              <p>Pembayaran Tunai atau Kredit diproses di halaman Pembayaran. Setelah status berubah menjadi Lunas atau Piutang, invoice dapat dicetak ulang dari halaman ini.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/order-detail.js"></script>
+</body>
+</html>

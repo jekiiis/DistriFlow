@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Form Pengguna - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-05 Form Pengguna («boundary» UserFormPage) -->
+<body data-page="users" data-view="form" data-roles="ADMIN">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content uf-content">
+        <div id="userFormAlert" class="alert err hidden" role="alert"></div>
+
+        <a id="btnBack" class="uf-back" href="users.html">
+          <span aria-hidden="true">&#8592;</span> Kembali ke Daftar Pengguna
+        </a>
+
+        <div class="uf-heading">
+          <h1 id="formTitle">Tambah Pengguna Baru</h1>
+          <p id="formSubtitle">Daftarkan akun staf baru untuk akses operasional sistem DistriFlow Bandung.</p>
+        </div>
+
+        <form id="form" class="uf-card" novalidate>
+          <div class="uf-card-head">
+            <div>
+              <h2>Informasi Akun Staf</h2>
+              <p>Kelola kredensial masuk, peran hak akses, dan status operasional.</p>
+            </div>
+            <a class="uf-badge" href="#roleMatrix">DistriFlow Role Matrix</a>
+          </div>
+
+          <div class="uf-grid">
+            <div class="uf-field">
+              <label for="name">Nama Lengkap <span class="uf-req" aria-hidden="true">*</span></label>
+              <input id="name" name="name" type="text" maxlength="100" placeholder="Contoh: Budi Santoso" autocomplete="name" aria-describedby="nameHint">
+              <p class="uf-hint" id="nameHint">Maksimal 100 karakter sesuai KTP/identitas staf.</p>
+            </div>
+
+            <div class="uf-field">
+              <label for="username">Username <span class="uf-req" aria-hidden="true">*</span></label>
+              <input id="username" name="username" type="text" maxlength="50" placeholder="Contoh: budi.santoso" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="usernameHint">
+              <p class="uf-hint" id="usernameHint">Digunakan untuk login. Huruf kecil dan angka, tanpa spasi.</p>
+            </div>
+
+            <div class="uf-field">
+              <label for="password">Password <span class="uf-req" aria-hidden="true">*</span></label>
+              <div class="uf-password">
+                <input id="password" name="password" type="password" placeholder="Masukkan kata sandi akun" autocomplete="new-password" aria-describedby="passwordHint">
+                <button id="btnPwToggle" class="uf-pw-toggle" type="button" aria-label="Tampilkan password">Tampilkan</button>
+              </div>
+              <p class="uf-hint" id="passwordHint">Minimal 8 karakter. Kosongkan saat mengubah jika tidak diganti.</p>
+            </div>
+
+            <div class="uf-field">
+              <label for="role">Peran <span class="uf-req" aria-hidden="true">*</span></label>
+              <select id="role" name="role" aria-describedby="roleHint">
+                <option value="">Pilih peran</option>
+                <option value="ADMIN">Admin (Akses pengelolaan pengguna sistem)</option>
+                <option value="SALES">Sales (Pencatatan Sales Order dan data pelanggan)</option>
+                <option value="KASIR">Kasir (Pembayaran dan piutang)</option>
+                <option value="GUDANG">Petugas Gudang (Barang dan mutasi stok)</option>
+              </select>
+              <p class="uf-hint" id="roleHint">Menentukan otorisasi transaksi dan visibilitas data cabang.</p>
+            </div>
+
+            <div class="uf-field uf-field--full">
+              <label for="isActive">Status Akun Aktif</label>
+              <label class="uf-switch" for="isActive">
+                <input id="isActive" name="is_active" type="checkbox" checked>
+                <span class="uf-switch-track" aria-hidden="true"></span>
+                <span class="uf-switch-copy" id="statusLabel">Aktif</span>
+              </label>
+              <p class="uf-hint" id="statusHint">Staf dapat langsung masuk ke antarmuka terminal dan modul inventaris.</p>
+            </div>
+          </div>
+
+          <div class="uf-actions">
+            <a id="btnCancel" class="btn secondary" href="users.html">Batal</a>
+            <button id="btnSimpan" class="btn uf-save" type="submit">Simpan Pengguna</button>
+          </div>
+        </form>
+
+        <aside id="roleMatrix" class="uf-matrix" aria-labelledby="roleMatrixTitle">
+          <h2 id="roleMatrixTitle">DistriFlow Role Matrix</h2>
+          <div class="uf-matrix-grid">
+            <div><b>Admin</b><span>Mengelola pengguna dan pengaturan sistem.</span></div>
+            <div><b>Sales</b><span>Mencatat Sales Order dan data pelanggan.</span></div>
+            <div><b>Kasir</b><span>Memproses pembayaran dan piutang.</span></div>
+            <div><b>Petugas Gudang</b><span>Mengelola barang dan mutasi stok fisik.</span></div>
+          </div>
+        </aside>
+
+        <aside class="uf-security" aria-labelledby="securityTitle">
+          <h2 id="securityTitle">Hak Akses &amp; Catatan Keamanan</h2>
+          <p id="securityNote">Akun yang dibuat akan langsung aktif. Kata sandi dapat diganti sendiri melalui menu Ganti Password setelah login.</p>
+          <p id="securityLimit" class="uf-limit">Penegakan wajib ganti kata sandi pada login pertama belum didukung backend, sehingga tidak diterapkan pada form ini.</p>
+          <div class="uf-notes-grid">
+            <article>
+              <h3>Standar Password</h3>
+              <p>Gunakan minimal 8 karakter dengan paduan huruf besar, huruf kecil, dan simbol numerik demi keamanan POS kasir.</p>
+            </article>
+            <article>
+              <h3>Pemisahan Tugas</h3>
+              <p>Peran Sales tidak memiliki otorisasi tutup buku kasir, sementara Petugas Gudang hanya mengakses mutasi barang fisik.</p>
+            </article>
+            <article>
+              <h3>Audit Trail</h3>
+              <p>Segala perubahan data pengguna akan tertaut dengan ID pengguna pada log operasional DistriFlow Bandung.</p>
+            </article>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/pages/users-shell.js"></script>
+  <script src="../js/pages/user-form.js"></script>
+</body>
+</html>

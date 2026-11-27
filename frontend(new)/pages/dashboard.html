@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-02 Dashboard («boundary» DashboardPage) -->
+<body data-page="dashboard" data-roles="">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content dash-content">
+        <div id="dashAlert" class="alert err hidden" role="alert"></div>
+
+        <section id="adminView">
+          <div class="dash-head">
+            <div>
+              <h1 id="greeting">Ringkasan Operasional</h1>
+              <p class="dash-subtitle">Laporan pergerakan Stok, penjualan harian, dan piutang aktif cabang Bandung.</p>
+            </div>
+          </div>
+
+          <section class="kpi-grid" aria-label="Ringkasan angka operasional">
+            <article class="kpi-card finance-kpi">
+              <div class="kpi-label">Omzet hari ini</div>
+              <div class="kpi-value" id="kpiOmzet">&mdash;</div>
+              <div class="kpi-foot"><span id="kpiOmzetFoot">Memuat statistik&hellip;</span></div>
+            </article>
+            <article class="kpi-card finance-kpi">
+              <div class="kpi-label">Jumlah order hari ini</div>
+              <div class="kpi-value" id="kpiOrders">&mdash;</div>
+              <div class="kpi-foot"><span id="kpiOrdersFoot">Memuat statistik&hellip;</span></div>
+            </article>
+            <article class="kpi-card finance-kpi">
+              <div class="kpi-label">Piutang jatuh tempo</div>
+              <div class="kpi-value" id="kpiDue">&mdash;</div>
+              <div class="kpi-foot">
+                <span id="kpiDueFoot">Memuat statistik&hellip;</span>
+                <a id="kpiDueLink" href="orders.html" class="kpi-link">Rincian</a>
+              </div>
+            </article>
+            <article class="kpi-card stock-kpi">
+              <div class="kpi-label">Stok menipis</div>
+              <div class="kpi-value" id="kpiStock">&mdash;</div>
+              <div class="kpi-foot"><span id="kpiStockFoot">Memuat statistik&hellip;</span></div>
+            </article>
+            <article class="kpi-card stock-kpi">
+              <div class="kpi-label">Perlu Restock</div>
+              <div class="kpi-value" id="kpiRestock">&mdash;</div>
+              <div class="kpi-foot"><span id="kpiRestockFoot">Memuat statistik&hellip;</span></div>
+            </article>
+          </section>
+
+          <section class="dash-banner" aria-label="Peringatan stok">
+            <span class="dash-banner-icon" aria-hidden="true">!</span>
+            <div class="dash-banner-copy">
+              <strong>Perlu Restock Segera Perkiraan 7 Hari</strong>
+              <span id="restockSummary">Memeriksa data produk&hellip;</span>
+            </div>
+            <button type="button" id="btnSupplierOrder" class="btn secondary dash-banner-btn" disabled
+                    title="Order pemasok (PO) masih dalam backlog">+ Buat Order Pemasok</button>
+          </section>
+
+          <section class="card dash-stock-card">
+            <div class="dash-card-head">
+              <div>
+                <h2>StokMenipis</h2>
+                <p>Daftar item inventaris yang berada di bawah ambang batas stok minimum.</p>
+              </div>
+              <a href="products.html" class="dash-card-link">Semua Barang</a>
+            </div>
+            <div class="table-wrap">
+              <table class="dash-stock-table">
+                <thead>
+                  <tr>
+                    <th>Kode</th>
+                    <th>Nama barang</th>
+                    <th class="num">Stok</th>
+                    <th class="num">Stok minimum</th>
+                    <th>Status</th>
+                    <th>Aksi cepat</th>
+                  </tr>
+                </thead>
+                <tbody id="tblLow">
+                  <tr><td class="empty" colspan="6">Memuat data produk&hellip;</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="dash-stock-foot">
+              <span id="stockFoot">Menampilkan 0 item stok kritis</span>
+              <a href="stock-in.html" class="dash-card-link">Buka Manajemen Stok Lengkap</a>
+            </div>
+          </section>
+
+          <section class="dash-info-grid" aria-label="Informasi operasional lainnya">
+            <article class="dash-info-card">
+              <h2>Armada Pengiriman</h2>
+              <p>Data armada belum tersedia melalui API yang ada saat ini.</p>
+              <div class="dash-info-line"><span>Armada aktif</span><b>&mdash;</b></div>
+              <div class="dash-info-line"><span>Area tugas</span><b>&mdash;</b></div>
+            </article>
+            <article class="dash-info-card">
+              <h2>Koneksi POS Kasir</h2>
+              <p>Status terminal belum tersedia melalui API yang ada saat ini.</p>
+              <div class="dash-info-line"><span>Terminal Kasir 01</span><b>&mdash;</b></div>
+            </article>
+            <article class="dash-info-card">
+              <h2>Bantuan Operasional</h2>
+              <p>Pusat dokumentasi standar operasional prosedur penerimaan dan pengeluaran barang grosir.</p>
+              <div class="dash-info-line"><span>Panduan SOP Gudang DistriFlow</span><b>&mdash;</b></div>
+            </article>
+          </section>
+        </section>
+
+        <section id="userView" class="hidden dash-shortcuts" aria-label="Pintasan sesuai peran">
+          <h2>Pintasan sesuai peran</h2>
+          <div id="shortcuts" class="row"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/dashboard.js"></script>
+</body>
+</html>

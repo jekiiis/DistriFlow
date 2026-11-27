@@ -96,10 +96,13 @@ CREATE TABLE payments (
   change_amount  DECIMAL(15,2) NOT NULL DEFAULT 0,
   method         ENUM('TUNAI','TRANSFER') NOT NULL,
   note           VARCHAR(255) NULL,
+  idempotency_key VARBINARY(512) NULL,              -- REF:<referensi> atau AUTO:<sha256>
+  request_hash   BINARY(32) NULL,                   -- sidik jari payload untuk deteksi konflik
   created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at     TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (sales_order_id) REFERENCES sales_orders(id),
-  FOREIGN KEY (user_id)        REFERENCES users(id)
+  FOREIGN KEY (user_id)        REFERENCES users(id),
+  UNIQUE KEY uq_payments_order_idem (sales_order_id, idempotency_key)
 ) ENGINE=InnoDB;
 
 CREATE TABLE stock_movements (

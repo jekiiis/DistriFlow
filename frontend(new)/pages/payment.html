@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kasir dan loket pembayaran sales order DistriFlow">
+  <title>Pembayaran - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-09 Pembayaran («boundary» PaymentPage) -->
+<body data-page="payment" data-roles="KASIR" data-title="Pembayaran" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div>
+            <h1>Kasir &amp; Loket Pembayaran</h1>
+            <p>Selesaikan tagihan order Draft. Stok, status akhir, kembalian, dan batas kredit ditentukan backend.</p>
+          </div>
+          <a class="btn secondary" href="orders.html">Kembali ke Daftar</a>
+        </div>
+
+        <div id="paymentAlert" class="alert err hidden" role="alert"></div>
+
+        <section id="draftCard" class="ui-card ui-card--flush">
+          <div class="ui-card-head" style="padding:20px 22px 0">
+            <div>
+              <h2>Order menunggu pembayaran</h2>
+              <p>Pilih sales order berstatus Draft.</p>
+            </div>
+            <input id="draftSearch" class="input" type="search" placeholder="Cari No. order / pelanggan" aria-label="Cari order" style="max-width:280px">
+          </div>
+          <div class="table-wrap">
+            <table class="ui-table">
+              <thead><tr>
+                <th>No. order</th><th>Tanggal</th><th>Pelanggan</th><th>Sales</th>
+                <th class="num">Total</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody id="draftBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div id="detail" class="hidden">
+          <div class="ui-grid-2">
+            <section class="ui-card">
+              <div class="ui-card-head">
+                <div>
+                  <h2>Ringkasan Tagihan <span id="orderStatus"></span></h2>
+                  <p id="orderSubtitle">Memuat tagihan sales order…</p>
+                </div>
+              </div>
+              <dl id="summaryDl" class="ui-dl"></dl>
+              <div style="margin-top:16px">
+                <div class="ui-kpi-label">Total tagihan bersih</div>
+                <div id="totalTagihan" class="ui-total">Rp0</div>
+              </div>
+              <div class="table-wrap" style="margin-top:16px">
+                <table class="ui-table">
+                  <thead><tr>
+                    <th>Kode</th><th>Nama</th><th class="num">Harga</th>
+                    <th class="num">Qty</th><th class="num">Diskon</th><th class="num">Subtotal</th>
+                  </tr></thead>
+                  <tbody id="itemBody"></tbody>
+                </table>
+              </div>
+              <div id="deliveryNote" class="ui-note">
+                <h3>Catatan SOP Delivery</h3>
+                <p>Barang dimuat saat pickup pelanggan. Verifikasi stok telah dicap oleh petugas gudang.</p>
+              </div>
+            </section>
+
+            <section class="ui-card">
+              <div class="ui-card-head">
+                <div>
+                  <h2>Proses Transaksi Pembayaran</h2>
+                  <p>Enkripsi POS aktif. Nominal diterima dicatat sebagai pembayaran.</p>
+                </div>
+              </div>
+              <form id="paymentForm" novalidate>
+                <div class="ui-field">
+                  <label>Jenis Pembayaran</label>
+                  <div class="radio-group">
+                    <label><input id="typeTunai" type="radio" name="payment_type" value="TUNAI" checked> Tunai (Cash POS)</label>
+                    <label><input id="typeKredit" type="radio" name="payment_type" value="KREDIT"> Kredit (Tempo)</label>
+                  </div>
+                  <div id="creditHint" class="ui-hint">Kredit tersedia sesuai sisa limit pelanggan.</div>
+                </div>
+                <div class="ui-form-grid">
+                  <div class="ui-field">
+                    <label for="method">Metode Bayar</label>
+                    <select id="method" name="method" class="select">
+                      <option value="TUNAI">Tunai (kas kasir/loket)</option>
+                      <option value="TRANSFER">Transfer (manual)</option>
+                    </select>
+                  </div>
+                  <div class="ui-field">
+                    <label for="nominal">Nominal Bayar (Rp)</label>
+                    <input id="nominal" name="nominal" class="input" inputmode="decimal" autocomplete="off" placeholder="0" disabled>
+                    <div id="quick" class="quick" aria-label="Nominal cepat"></div>
+                    <div class="ui-hint">Pintasan: F4 = Uang Pas.</div>
+                  </div>
+                  <div class="ui-field ui-field--full">
+                    <label for="note">Catatan</label>
+                    <textarea id="note" name="note" class="textarea" maxlength="255" placeholder="Catatan pembayaran (opsional)" disabled></textarea>
+                  </div>
+                </div>
+                <div id="preview" class="alert err hidden" role="status"></div>
+                <dl class="ui-dl"><dt>Kembalian tunai</dt><dd id="change">Rp0</dd></dl>
+                <div class="ui-actions">
+                  <button id="btnProses" class="btn" type="submit" disabled>Proses Pembayaran</button>
+                </div>
+              </form>
+              <div id="invoiceCard" class="hidden" style="margin-top:16px">
+                <div class="ui-card-head">
+                  <div>
+                    <h2>Penerbitan Dokumen</h2>
+                    <p id="invoiceStatus">Status pembayaran: -</p>
+                  </div>
+                </div>
+                <div class="ui-field">
+                  <label for="format">Format invoice</label>
+                  <select id="format" class="select">
+                    <option value="a4">Faktur A4</option>
+                    <option value="80mm">Kertas 80 mm (POS)</option>
+                  </select>
+                </div>
+                <div class="ui-actions">
+                  <button id="btnCetak" class="btn secondary" type="button">Cetak Invoice (PDF)</button>
+                </div>
+                <div id="result" class="alert ok hidden" style="margin-top:12px">
+                  Nominal diterima <strong id="resultAmount">-</strong> ·
+                  Kembalian <strong id="resultChange">-</strong> ·
+                  Terpakai <strong id="resultUsed">-</strong>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/payment.js"></script>
+</body>
+</html>

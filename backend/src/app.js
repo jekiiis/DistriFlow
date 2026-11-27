@@ -12,6 +12,10 @@ const { fail, HTTP_STATUS } = require('./helpers/response');
 
 const app = express();
 
+// Bundel frontend aktif. Guard dan static wajib memakai root yang sama agar
+// HTML terlindungi dan asetnya berasal dari direktori yang identik.
+const frontendDir = path.resolve(__dirname, '../../frontend(new)');
+
 app.disable('x-powered-by');
 
 app.use(helmet({
@@ -39,12 +43,12 @@ app.use(sessionMiddleware);
 
 // Guard halaman berjalan sebelum static agar HTML terlindungi tidak bisa
 // diambil langsung lewat express.static.
-app.use(createPageGuard());
+app.use(createPageGuard({ pagesDir: path.resolve(frontendDir, 'pages') }));
 
 app.use('/api', routes);
 
 // Aset publik (css/js/gambar) tetap dapat dimuat setelah halaman diizinkan.
-app.use(express.static(path.resolve(__dirname, '../../frontend'), {
+app.use(express.static(frontendDir, {
   index: false,
   redirect: false,
   dotfiles: 'ignore'

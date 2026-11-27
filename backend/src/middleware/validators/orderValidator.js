@@ -100,4 +100,11 @@ const list = [
     .withMessage('Limit maksimal 100')
 ];
 
-module.exports = { create, id, list, ORDER_STATUSES };
+// FR-09: alasan pembatalan wajib dan dibatasi panjangnya oleh kolom VARCHAR(255).
+const cancel = [
+  param('id').isInt({ min: 1 }).withMessage('ID sales order tidak valid'),
+  body('reason').trim().notEmpty().withMessage('Alasan pembatalan wajib diisi')
+    .isLength({ max: 255 }).withMessage('Alasan pembatalan maksimal 255 karakter')
+];
+
+module.exports = { create, id, list, cancel, ORDER_STATUSES };

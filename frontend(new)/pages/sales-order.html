@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sales Order Baru - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-06 Sales Order Baru («boundary» SalesOrderPage) -->
+<body data-page="sales-order" data-roles="SALES,ADMIN" data-title="Sales Order Baru" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading">
+          <h1>Sales Order Baru</h1>
+          <p>Tanggal <span id="tgl">-</span> · nomor order dibuat otomatis saat disimpan · tekan <strong>F4</strong> untuk input cepat kode barang.</p>
+        </div>
+        <div id="soAlert" class="alert err hidden" role="alert"></div>
+
+        <section class="ui-kpi-grid" aria-label="Ringkasan pelanggan dan order">
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Pelanggan</span><strong class="ui-kpi-value ui-kpi-value--sm" id="kpiCustomer">Belum dipilih</strong><span class="ui-kpi-foot" id="kpiCustomerCode">Cari kode atau nama toko</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Level harga</span><strong class="ui-kpi-value ui-kpi-value--sm" id="kpiLevel">-</strong><span class="ui-kpi-foot">Diambil dari data pelanggan</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Sisa limit</span><strong class="ui-kpi-value ui-kpi-value--sm" id="kpiLimit">-</strong><span class="ui-kpi-foot" id="kpiOutstanding">Piutang berjalan: -</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Total order</span><strong class="ui-kpi-value ui-kpi-value--sm" id="label2">Rp0</strong><span class="ui-kpi-foot" id="jmlBaris">0 baris · 0 item</span></article>
+        </section>
+
+        <div class="ui-grid-2">
+          <div>
+            <section class="ui-card">
+              <div class="ui-card-head"><div><h2>Pelanggan</h2><p>Pilih pelanggan aktif untuk menentukan level harga dan limit kredit.</p></div></div>
+              <div class="ui-form-grid">
+                <div class="ui-field ui-field--full">
+                  <label for="customer">Cari pelanggan</label>
+                  <input id="customer" list="customerList" placeholder="Ketik kode atau nama toko" autocomplete="off">
+                  <datalist id="customerList"></datalist>
+                  <p class="ui-hint" id="customerStatus">Memuat daftar pelanggan…</p>
+                </div>
+              </div>
+              <dl class="ui-dl" id="label1" style="margin-top:16px">
+                <dt>Pelanggan</dt><dd id="creditName">-</dd>
+                <dt>Kode</dt><dd id="creditCode">-</dd>
+                <dt>Level harga</dt><dd id="levelInfo">-</dd>
+                <dt>Limit kredit</dt><dd id="creditLimit">-</dd>
+              </dl>
+              <div id="riskAlert" class="alert warn hidden" style="margin-top:14px"></div>
+            </section>
+
+            <section class="ui-card">
+              <div class="ui-card-head"><div><h2>Daftar Barang</h2><p>Harga dan stok diambil dari server sesuai level harga pelanggan.</p></div><span class="muted" id="productInfo">Memuat daftar barang…</span></div>
+              <form id="formItem" class="ui-toolbar" novalidate>
+                <div class="ui-field" style="flex:2">
+                  <label for="code">Kode barang</label>
+                  <input id="code" name="code" list="productList" autocomplete="off" placeholder="Scan atau ketik kode, tekan Enter">
+                  <datalist id="productList"></datalist>
+                </div>
+                <div class="ui-field"><label for="qty">Jumlah</label><input id="qty" name="qty" type="number" min="1" step="1" value="1"></div>
+                <div class="ui-field"><label for="discount">Diskon (Rp)</label><input id="discount" name="discount" type="number" min="0" step="1" value="0" placeholder="0"></div>
+                <button class="btn" id="btnTambah" type="submit">+ Tambah</button>
+              </form>
+              <p class="ui-hint" id="itemInfo">Pilih pelanggan terlebih dahulu untuk melihat harga.</p>
+              <div class="table-wrap" style="margin-top:12px">
+                <table class="ui-table">
+                  <thead><tr><th>Kode</th><th>Nama barang</th><th class="num">Harga</th><th class="num">Qty</th><th class="num">Diskon</th><th class="num">Subtotal</th><th>Aksi</th></tr></thead>
+                  <tbody id="table1"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <div>
+            <section class="ui-card">
+              <h2>Ringkasan Order</h2>
+              <dl class="ui-dl">
+                <dt>Subtotal</dt><dd id="subtotal">Rp0</dd>
+                <dt>Total diskon</dt><dd id="discountTotal">Rp0</dd>
+                <dt>Status</dt><dd id="statusInfo">Draft (belum diproses)</dd>
+              </dl>
+              <div class="ui-actions">
+                <button class="btn secondary" id="btnBatal" type="button">Batal</button>
+                <button class="btn" id="btnSimpan" type="button" disabled>Simpan Order</button>
+              </div>
+              <div id="hasil" class="alert ok hidden" style="margin-top:14px"></div>
+            </section>
+            <div class="ui-note">
+              <h3>Metode pembayaran</h3>
+              <p id="paymentNote">Order dibuat sebagai Draft. Metode pembayaran Tunai atau Kredit dipilih Kasir pada halaman Pembayaran; faktur diterbitkan setelah pembayaran diproses.</p>
+            </div>
+            <div class="ui-note ui-limit" style="margin-top:18px">
+              Total = subtotal − diskon. Tidak ada PPN pada perhitungan sistem.
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/sales-order.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daftar Sales Order - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-07 Daftar Sales Order («boundary» SalesOrderListPage) -->
+<body data-page="orders" data-roles="ADMIN,SALES,KASIR" data-title="Daftar Sales Order" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading">
+          <h1>Daftar Sales Order</h1>
+          <p id="sub">Telusuri, filter, dan buka detail sales order. Data diambil langsung dari API.</p>
+        </div>
+        <div id="ordersAlert" class="alert err hidden" role="alert"></div>
+
+        <section class="ui-kpi-grid" aria-label="Ringkasan sales order">
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Total nilai order</span><strong class="ui-kpi-value" id="kpiTotal">Rp0</strong><span class="ui-kpi-foot" id="kpiTotalCount">0 transaksi</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Draft belum final</span><strong class="ui-kpi-value" id="kpiDraft">Rp0</strong><span class="ui-kpi-foot" id="kpiDraftCount">0 faktur</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Lunas terverifikasi</span><strong class="ui-kpi-value" id="kpiLunas">Rp0</strong><span class="ui-kpi-foot" id="kpiLunasCount">0 order</span></article>
+          <article class="ui-kpi-card"><span class="ui-kpi-label">Piutang berjalan</span><strong class="ui-kpi-value" id="kpiPiutang">Rp0</strong><span class="ui-kpi-foot" id="kpiPiutangCount">0 order berjalan</span></article>
+        </section>
+
+        <section class="ui-card ui-card--flush">
+          <div style="padding:20px 22px 0">
+            <div class="ui-card-head">
+              <div><h2>Data Sales Order</h2><p id="resultInfo">Memuat daftar sales order…</p></div>
+              <a class="btn hidden" id="btnTambah" href="sales-order.html">+ Order</a>
+            </div>
+            <form id="filter" class="ui-toolbar" novalidate>
+              <div class="ui-field"><label for="from">Tanggal awal</label><input id="from" type="date"></div>
+              <div class="ui-field"><label for="to">Tanggal akhir</label><input id="to" type="date"></div>
+              <div class="ui-field"><label for="status">Status</label><select id="status"><option value="">Semua</option><option value="DRAFT">Draft</option><option value="LUNAS">Lunas</option><option value="PIUTANG">Piutang</option><option value="BATAL">Batal</option></select></div>
+              <div class="ui-field" style="flex:1"><label for="q">Cari order</label><input id="q" placeholder="No. order atau nama pelanggan"></div>
+              <button class="btn" type="submit">Tampilkan</button>
+              <button class="btn secondary" id="btnReset" type="button">Reset</button>
+            </form>
+          </div>
+          <div class="table-wrap">
+            <table class="ui-table">
+              <thead><tr><th>No. order</th><th>Tanggal</th><th>Pelanggan</th><th>Sales</th><th class="num">Total</th><th>Status</th><th class="right">Aksi</th></tr></thead>
+              <tbody id="tbl"></tbody>
+            </table>
+          </div>
+          <div style="padding:16px 22px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <span class="muted" id="paginationInfo">-</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn secondary" id="prevPage" type="button">Sebelumnya</button>
+              <span class="muted" id="pageLabel">1</span>
+              <button class="btn secondary" id="nextPage" type="button">Berikutnya</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="ui-note">
+          <h3>Petunjuk operasional</h3>
+          <p>Order berstatus Draft dapat diproses Kasir sebelum menjadi Lunas atau Piutang. Tekan <strong>/</strong> untuk mencari order secara cepat. Ringkasan dihitung dari order yang dimuat. Admin dapat membatalkan order Draft atau Piutang dengan alasan.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/orders.js"></script>
+</body>
+</html>

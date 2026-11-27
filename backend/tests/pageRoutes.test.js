@@ -15,7 +15,8 @@ const request = require('supertest');
 const { createPageGuard } = require('../src/middleware/pageGuard');
 const apiRoutes = require('../src/routes');
 
-const frontendDir = path.resolve(__dirname, '../../frontend');
+// Sprint 3: backend melayani frontend(new); frontend/ tetap ada sebagai backup.
+const frontendDir = path.resolve(__dirname, '../../frontend(new)');
 
 function makeApp() {
   const app = express();
@@ -224,6 +225,51 @@ describe('routing halaman', () => {
     const afterLogout = await agent.get('/pages/dashboard.html');
     expect(afterLogout.status).toBe(302);
     expect(afterLogout.headers.location).toBe('/pages/login.html');
+  });
+});
+
+describe('routing halaman Sprint 3', () => {
+  test.each([
+    ['/pages/products.html', 'ADMIN'],
+    ['/pages/products.html', 'GUDANG'],
+    ['/pages/product-form.html', 'ADMIN'],
+    ['/pages/stock-in.html', 'GUDANG'],
+    ['/pages/customers.html', 'SALES'],
+    ['/pages/customers.html', 'KASIR'],
+    ['/pages/customer-form.html', 'ADMIN'],
+    ['/pages/receivables.html', 'KASIR'],
+    ['/pages/reports.html', 'ADMIN']
+  ])('halaman %s untuk %s dapat diakses', async (pathname, role) => {
+    const response = await getAs(role, pathname);
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('<title>' + path.basename(pathname) + '</title>');
+  });
+
+  test.each([
+    ['/pages/products.html', 'SALES'],
+    ['/pages/product-form.html', 'GUDANG'],
+    ['/pages/stock-in.html', 'KASIR'],
+    ['/pages/customers.html', 'GUDANG'],
+    ['/pages/customer-form.html', 'KASIR'],
+    ['/pages/receivables.html', 'ADMIN'],
+    ['/pages/reports.html', 'SALES'],
+    ['/pages/reports.html', null]
+  ])('halaman %s untuk %s ditolak', async (pathname, role) => {
+    const response = await getAs(role, pathname);
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe(
+      role ? '/pages/dashboard.html' : '/pages/login.html'
+    );
+  });
+
+  test('aset baru frontend(new) tetap termuat', async () => {
+    const layout = await getAs(null, '/js/layout.js');
+    expect(layout.status).toBe(200);
+    expect(layout.headers['content-type']).toContain('javascript');
+
+    const css = await getAs(null, '/css/style.css');
+    expect(css.status).toBe(200);
+    expect(css.headers['content-type']).toContain('text/css');
   });
 });
 

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pengguna - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-04 Daftar Pengguna («boundary» UserListPage) -->
+<body data-page="users" data-view="list" data-roles="ADMIN">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content users-content">
+        <div id="usersAlert" class="alert err hidden" role="alert"></div>
+
+        <section class="users-kpi-grid" aria-label="Ringkasan akun pengguna">
+          <article class="users-kpi-card">
+            <div class="users-kpi-label">Total Akun Terdaftar</div>
+            <div class="users-kpi-value" id="kpiTotal">—</div>
+            <div class="users-kpi-foot">Berdasarkan data pengguna</div>
+          </article>
+          <article class="users-kpi-card">
+            <div class="users-kpi-label">Status Pengguna Aktif</div>
+            <div class="users-kpi-value" id="kpiActive">—</div>
+            <div class="users-kpi-foot"><span id="kpiActiveLabel">Akun dapat masuk sistem</span></div>
+          </article>
+          <article class="users-kpi-card">
+            <div class="users-kpi-label">Peran Terbanyak</div>
+            <div class="users-kpi-value users-kpi-value--text" id="kpiRole">—</div>
+            <div class="users-kpi-foot">Dari empat peran yang tersedia</div>
+          </article>
+          <article class="users-kpi-card">
+            <div class="users-kpi-label">Sesi Login Hari Ini</div>
+            <div class="users-kpi-value" id="kpiSession">—</div>
+            <div class="users-kpi-foot">Belum tersedia dari API</div>
+          </article>
+        </section>
+
+        <div class="users-toolbar">
+          <label class="users-search" for="q">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a6 6 0 104.5 10l4.5 4.5M10 4a6 6 0 010 12"></path></svg>
+            <input id="q" type="search" autocomplete="off" placeholder="Cari pengguna...">
+          </label>
+          <select id="roleFilter" aria-label="Filter peran">
+            <option value="">Semua Peran</option>
+            <option value="ADMIN">Admin</option>
+            <option value="SALES">Sales</option>
+            <option value="KASIR">Kasir</option>
+            <option value="GUDANG">Petugas Gudang</option>
+          </select>
+          <button id="btnReset" class="btn secondary users-reset" type="button">Reset</button>
+          <a id="btnAdd" class="btn users-add" href="user-form.html">+ Tambah Pengguna</a>
+        </div>
+
+        <section class="users-card" aria-labelledby="usersTitle">
+          <div class="users-card-head">
+            <h1 id="usersTitle">Data Pengguna</h1>
+            <span class="users-count" id="userCount">— Terdaftar</span>
+          </div>
+          <div class="table-wrap">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Peran</th>
+                  <th>Status</th>
+                  <th>Terakhir Masuk / Aktivitas</th>
+                  <th class="right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tbl"></tbody>
+            </table>
+          </div>
+          <div class="users-pagination">
+            <span id="pageInfo">Menampilkan pengguna terdaftar</span>
+            <div class="users-pages">
+              <button id="btnPrev" class="btn secondary" type="button">Sebelumnya</button>
+              <button id="btnNext" class="btn secondary" type="button">Berikutnya</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="users-note">
+          <h2><span class="ico" aria-hidden="true">ⓘ</span> Kebijakan Hak Akses &amp; Keamanan Sistem POS</h2>
+          <p>Setiap perubahan status pengguna atau pembuatan akun baru akan tercatat di log audit server DistriFlow Bandung. Akses kasir dan sales hanya berlaku pada terminal yang diotorisasi sesuai jam operasional.</p>
+        </aside>
+      </main>
+    </div>
+  </div>
+
+  <div id="usersModal" class="users-modal-backdrop hidden">
+    <div class="users-modal" role="dialog" aria-modal="true" aria-labelledby="usersModalTitle">
+      <div class="users-modal-icon" aria-hidden="true">!</div>
+      <div class="users-modal-body">
+        <h2 id="usersModalTitle">Nonaktifkan Pengguna?</h2>
+        <p id="usersModalText"></p>
+        <dl class="users-modal-meta">
+          <div><dt>Username:</dt><dd id="usersModalUsername">—</dd></div>
+          <div><dt>Peran:</dt><dd id="usersModalRole">—</dd></div>
+          <div><dt>Status Saat Ini:</dt><dd id="usersModalStatus">—</dd></div>
+        </dl>
+        <div class="users-modal-actions">
+          <button id="btnModalCancel" class="btn secondary" type="button">Batal</button>
+          <button id="btnModalConfirm" class="btn danger" type="button">Ya, Nonaktifkan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/pages/users-shell.js"></script>
+  <script src="../js/pages/users.js"></script>
+</body>
+</html>

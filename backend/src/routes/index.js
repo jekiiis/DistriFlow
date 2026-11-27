@@ -7,6 +7,11 @@ const userRoutes = require('./userRoutes');
 const customerRoutes = require('./customerRoutes');
 const productRoutes = require('./productRoutes');
 const orderRoutes = require('./orderRoutes');
+const stockRoutes = require('./stockRoutes');
+const receivableRoutes = require('./receivableRoutes');
+const paymentReceiptRoutes = require('./paymentReceiptRoutes');
+const reportRoutes = require('./reportRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
 
 const router = express.Router();
 
@@ -20,6 +25,13 @@ router.use('/products', productRoutes);
 
 // Task 2.3: buat sales order DRAFT (UC-03 Alur A).
 router.use('/orders', orderRoutes);
+
+// Sprint 3: barang masuk, piutang, bukti pembayaran, laporan, dan KPI.
+router.use('/stock-in', stockRoutes);
+router.use('/receivables', receivableRoutes);
+router.use('/payments', paymentReceiptRoutes);
+router.use('/reports', reportRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 // Router ini menjawab path API yang tidak dikenal dengan format seragam.
 router.use((req, res) => {

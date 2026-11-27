@@ -19,6 +19,10 @@ router.use(requireLogin);
 router.post('/', requireRole('ADMIN', 'SALES'), orderValidator.create, validate,
   asyncHandler(orderController.store));
 
+// FR-09: pembatalan DRAFT/PIUTANG hanya Admin, dengan alasan wajib.
+router.post('/:id/cancel', requireRole('ADMIN'), orderValidator.cancel, validate,
+  asyncHandler(orderController.cancel));
+
 // UC-03 daftar/detail: Sales hanya melihat order miliknya (ditegakkan service).
 router.get('/', requireRole('ADMIN', 'SALES', 'KASIR'), orderValidator.list, validate,
   asyncHandler(orderController.index));

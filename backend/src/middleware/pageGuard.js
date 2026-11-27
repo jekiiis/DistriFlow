@@ -10,6 +10,7 @@ const DASHBOARD_PAGE = '/pages/dashboard.html';
 
 const SALES_ORDER_ROLES = Object.freeze(['SALES', 'ADMIN']);
 const ORDER_ROLES = Object.freeze(['ADMIN', 'SALES', 'KASIR']);
+const WAREHOUSE_ROLES = Object.freeze(['ADMIN', 'GUDANG']);
 
 // Allowlist kanonik. Path disimpan eksplisit, bukan berasal dari input pengguna.
 // Role dapat berupa string (satu peran) atau array (beberapa peran).
@@ -22,7 +23,14 @@ const PAGE_ACCESS = Object.freeze({
   '/pages/sales-order.html': SALES_ORDER_ROLES,
   '/pages/orders.html': ORDER_ROLES,
   '/pages/order-detail.html': ORDER_ROLES,
-  '/pages/payment.html': 'KASIR'
+  '/pages/payment.html': 'KASIR',
+  '/pages/products.html': WAREHOUSE_ROLES,
+  '/pages/product-form.html': 'ADMIN',
+  '/pages/stock-in.html': WAREHOUSE_ROLES,
+  '/pages/customers.html': ORDER_ROLES,
+  '/pages/customer-form.html': 'ADMIN',
+  '/pages/receivables.html': 'KASIR',
+  '/pages/reports.html': 'ADMIN'
 });
 
 function resolvePathname(req) {
@@ -80,7 +88,7 @@ function sendPage(res, next, pathname, pagesDir) {
 }
 
 function createPageGuard(options = {}) {
-  const pagesDir = options.pagesDir || path.resolve(__dirname, '../../frontend/pages');
+  const pagesDir = options.pagesDir || path.resolve(__dirname, '../../frontend(new)/pages');
 
   return function pageGuard(req, res, next) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {

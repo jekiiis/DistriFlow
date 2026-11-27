@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Penerimaan barang masuk gudang DistriFlow">
+  <title>Barang Masuk - DistriFlow</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<!-- UI-13 Barang Masuk («boundary» StockInPage) -->
+<body data-page="stock-in" data-roles="ADMIN,GUDANG" data-title="Barang Masuk" data-location="Gudang Utama Bandung">
+  <div class="app">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header id="topbar" class="topbar"></header>
+      <main id="content" class="content">
+        <div class="ui-heading" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div>
+            <h1>Catat Barang Masuk</h1>
+            <p>Pembaruan langsung stok fisik gudang berdasarkan Surat Jalan penerimaan barang resmi.</p>
+          </div>
+          <div class="ui-pager-group">
+            <button class="btn secondary" type="button" disabled title="Manifest belum tersedia">Manifest</button>
+            <button class="btn" type="button">Catat</button>
+          </div>
+        </div>
+
+        <div id="stockAlert" class="alert err hidden" role="alert"></div>
+
+        <div class="ui-gap ui-gap--info">
+          <strong>Perhatian:</strong> pencatatan menambah stok secara permanen. Nomor dokumen yang sama memunculkan peringatan dan konfirmasi, bukan pemblokiran.
+        </div>
+
+        <div class="ui-grid-2">
+          <section class="ui-card">
+            <div class="ui-section-head"><span class="ui-step">1</span><h3>Data Barang</h3></div>
+            <form id="stockForm" novalidate>
+              <div class="ui-field">
+                <label for="productSearch">Barang *</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <input id="productSearch" class="input" type="search" placeholder="Cari via SKU / nama barang" autocomplete="off" style="flex:1;min-width:180px">
+                  <button id="btnSearch" class="btn" type="submit">Cari</button>
+                </div>
+                <p class="ui-hint">Pencarian memakai GET /api/products.</p>
+              </div>
+              <div id="searchResults" class="ui-note hidden" style="margin-top:0"></div>
+              <dl id="productInfo" class="ui-dl" style="margin-top:16px"></dl>
+              <div class="ui-form-grid" style="margin-top:18px">
+                <div class="ui-field">
+                  <label for="qty">Jumlah Masuk *</label>
+                  <input id="qty" class="input" inputmode="numeric" placeholder="Minimal input: 1">
+                  <p class="ui-hint">Satuan mengikuti satuan barang terpilih.</p>
+                </div>
+                <div class="ui-field">
+                  <label for="docNo">No. Dokumen Pemasok *</label>
+                  <input id="docNo" class="input" placeholder="Contoh: SJ.0112" maxlength="40">
+                  <button id="btnDuplicateRule" class="btn secondary small" type="button" style="margin-top:8px">Lihat Aturan Duplikasi</button>
+                </div>
+              </div>
+              <label class="ui-inline-check" style="margin-top:8px"><input id="matchInvoice" type="checkbox"> Sesuai dengan detail faktur</label>
+              <div class="ui-actions">
+                <a class="btn secondary" href="products.html">Batal</a>
+                <button id="btnSave" class="btn" type="button">Simpan Masuk</button>
+              </div>
+            </form>
+          </section>
+
+          <aside>
+            <section class="ui-card">
+              <h2>Validasi Cepat</h2>
+              <p class="ui-hint">Shift aktif · Petugas gudang dari sesi login.</p>
+              <p id="adminNote" class="ui-hint hidden">Sebagai ADMIN Anda dapat mencatat barang masuk; pencatatan rutin dilakukan oleh petugas GUDANG.</p>
+              <div class="ui-gap ui-gap--info" style="margin-top:12px">
+                Backend memvalidasi barang, jumlah, nomor dokumen, dan kesesuaian faktur sebelum penyimpanan.
+              </div>
+              <dl class="ui-dl">
+                <dt>Lokasi rak</dt><dd>Tidak tersedia pada API</dd>
+                <dt>Pemasok</dt><dd>Tidak tersedia pada API</dd>
+                <dt>Log sesi</dt><dd>Tidak tersedia pada API</dd>
+              </dl>
+            </section>
+          </aside>
+        </div>
+
+        <section class="ui-card ui-card--flush">
+          <div style="padding:20px 22px 0">
+            <div class="ui-card-head">
+              <div><h2>Riwayat Barang Masuk</h2><p id="logInfo">Memuat riwayat penerimaan…</p></div>
+              <div class="ui-pager-group">
+                <select id="logLimit" class="select" aria-label="Baris per halaman riwayat">
+                  <option>10</option><option>25</option><option>50</option><option>100</option>
+                </select>
+                <button id="logPrev" class="btn secondary" type="button">Sebelumnya</button>
+                <span class="muted" id="logPageLabel">1</span>
+                <button id="logNext" class="btn secondary" type="button">Selanjutnya</button>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="ui-table">
+              <thead><tr>
+                <th>Waktu</th><th>Barang</th><th class="num">Jumlah</th><th>No. dokumen</th>
+                <th class="num">Stok sebelum</th><th class="num">Stok baru</th><th>Status</th><th>Aksi</th>
+              </tr></thead>
+              <tbody id="logBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="ui-notes-grid">
+          <div class="ui-note"><h3>Validitas Fisik Surat Jalan</h3><p>Pastikan cap basah dan tanda tangan driver tersedia sebelum pencatatan. Pemeriksaan ini menjadi tanggung jawab petugas gudang.</p></div>
+          <div class="ui-note"><h3>Pencegahan Duplikasi</h3><p>Jika nomor dokumen yang sama ditemukan, sistem akan menampilkan peringatan dan meminta konfirmasi, bukan memblokir penyimpanan.</p></div>
+          <div class="ui-note"><h3>Bantuan Supervisor</h3><p>Kontak supervisor gudang tidak tersedia pada data API. Rancangan menyebut ekstensi internal 204.</p></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="duplicateModal" class="ui-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="duplicateTitle">
+    <div class="ui-modal ui-modal--sm">
+      <div class="ui-modal-head"><h2 id="duplicateTitle">Peringatan: Potensi Duplikasi Surat Jalan</h2><button id="btnCloseDuplicate" class="btn secondary small" type="button">Tutup</button></div>
+      <p id="duplicateMessage">Nomor dokumen yang sama sudah pernah dicatat. Simpan lagi?</p>
+      <p class="ui-hint">Pilih “Ya, simpan” untuk melanjutkan pencatatan dengan konfirmasi duplikasi.</p>
+      <div class="ui-actions">
+        <button id="btnConfirmDuplicate" class="btn" type="button">Ya, simpan</button>
+        <button id="btnCancelDuplicate" class="btn secondary" type="button">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/layout.js"></script>
+  <script src="../js/pages/stock-in.js"></script>
+</body>
+</html>

@@ -36,17 +36,29 @@ function runGuard(overrides = {}, user = null) {
 }
 
 describe('allowlist halaman', () => {
-  test('berisi sembilan halaman dengan aturan Sprint 1 dan Sprint 2', () => {
-    expect(PAGE_ACCESS).toEqual({
+  test('berisi 16 halaman UI-01..UI-18 dengan aturan Sprint 1, 2, dan 3', () => {
+    const normalize = (rule) => (Array.isArray(rule) ? rule.slice().sort() : rule);
+    const expected = {
       '/pages/login.html': 'PUBLIC',
       '/pages/dashboard.html': 'AUTHENTICATED',
       '/pages/change-password.html': 'AUTHENTICATED',
       '/pages/users.html': 'ADMIN',
       '/pages/user-form.html': 'ADMIN',
-      '/pages/sales-order.html': ['SALES', 'ADMIN'],
+      '/pages/sales-order.html': ['ADMIN', 'SALES'],
       '/pages/orders.html': ['ADMIN', 'SALES', 'KASIR'],
       '/pages/order-detail.html': ['ADMIN', 'SALES', 'KASIR'],
-      '/pages/payment.html': 'KASIR'
+      '/pages/payment.html': 'KASIR',
+      '/pages/products.html': ['ADMIN', 'GUDANG'],
+      '/pages/product-form.html': 'ADMIN',
+      '/pages/stock-in.html': ['ADMIN', 'GUDANG'],
+      '/pages/customers.html': ['ADMIN', 'SALES', 'KASIR'],
+      '/pages/customer-form.html': 'ADMIN',
+      '/pages/receivables.html': 'KASIR',
+      '/pages/reports.html': 'ADMIN'
+    };
+    expect(Object.keys(PAGE_ACCESS).sort()).toEqual(Object.keys(expected).sort());
+    Object.keys(expected).forEach((pagePath) => {
+      expect(normalize(PAGE_ACCESS[pagePath])).toEqual(normalize(expected[pagePath]));
     });
   });
 });
@@ -228,5 +240,58 @@ describe('path alternatif dan allowlist', () => {
     const { res, next } = runGuard({ path: '/pages/%ZZ.html' });
     expect(next).toHaveBeenCalledTimes(1);
     expect(res.sendFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('halaman Sprint 3', () => {
+  test.each([
+    ['/pages/products.html', 'ADMIN'],
+    ['/pages/products.html', 'GUDANG'],
+    ['/pages/product-form.html', 'ADMIN'],
+    ['/pages/stock-in.html', 'ADMIN'],
+    ['/pages/stock-in.html', 'GUDANG'],
+    ['/pages/customers.html', 'ADMIN'],
+    ['/pages/customers.html', 'SALES'],
+    ['/pages/customers.html', 'KASIR'],
+    ['/pages/customer-form.html', 'ADMIN'],
+    ['/pages/receivables.html', 'KASIR'],
+    ['/pages/reports.html', 'ADMIN']
+  ])('%s dapat disajikan untuk %s', (pagePath, role) => {
+    const { res } = runGuard({ path: pagePath }, { id: 20, role });
+    expect(res.sendFile).toHaveBeenCalledWith(
+      pagePath.replace('/pages/', ''),
+      { root: '/fake/pages' },
+      expect.any(Function)
+    );
+    expect(res.redirect).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['/pages/products.html', 'SALES'],
+    ['/pages/products.html', 'KASIR'],
+    ['/pages/product-form.html', 'GUDANG'],
+    ['/pages/stock-in.html', 'SALES'],
+    ['/pages/customers.html', 'GUDANG'],
+    ['/pages/customer-form.html', 'SALES'],
+    ['/pages/receivables.html', 'ADMIN'],
+    ['/pages/reports.html', 'KASIR'],
+    ['/pages/reports.html', 'GUDANG']
+  ])('%s untuk %s diarahkan ke dashboard', (pagePath, role) => {
+    const { res } = runGuard({ path: pagePath }, { id: 21, role });
+    expect(res.redirect).toHaveBeenCalledWith(302, DASHBOARD_PAGE);
+    expect(res.sendFile).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    '/pages/products.html',
+    '/pages/product-form.html',
+    '/pages/stock-in.html',
+    '/pages/customers.html',
+    '/pages/customer-form.html',
+    '/pages/receivables.html',
+    '/pages/reports.html'
+  ])('%s tanpa sesi diarahkan ke login', (pagePath) => {
+    const { res } = runGuard({ path: pagePath });
+    expect(res.redirect).toHaveBeenCalledWith(302, LOGIN_PAGE);
   });
 });

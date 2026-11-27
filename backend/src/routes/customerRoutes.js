@@ -21,4 +21,14 @@ router.get('/', requireRole('ADMIN', 'SALES', 'KASIR'), catalogValidator.list, v
 router.get('/:id/credit', requireRole('ADMIN', 'SALES'), catalogValidator.customerId, validate,
   asyncHandler(catalogController.customerCredit));
 
+// Detail master dan seluruh perubahan hanya untuk Admin; tidak ada delete.
+router.get('/:id', requireRole('ADMIN'), catalogValidator.customerId, validate,
+  asyncHandler(catalogController.customerDetail));
+router.post('/', requireRole('ADMIN'), catalogValidator.storeCustomer, validate,
+  asyncHandler(catalogController.storeCustomer));
+router.put('/:id', requireRole('ADMIN'), catalogValidator.updateCustomer, validate,
+  asyncHandler(catalogController.updateCustomer));
+router.patch('/:id', requireRole('ADMIN'), catalogValidator.customerId, catalogValidator.setActive, validate,
+  asyncHandler(catalogController.setCustomerActive));
+
 module.exports = router;
